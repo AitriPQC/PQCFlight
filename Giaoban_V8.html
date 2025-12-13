@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<title>Lagoon Collection Standard – v12m8_final (Monthly Trend Table + MoM)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<script defer src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+:root{
+  --avg:#D95F02;    /* Đường TB */
+  --week:#E9F4FF;   /* Nền tuần họp */
+  --wed:#FF8C00;    /* Vạch giao ban */
+  --occ:#0a84ff;    /* CSP */
+  --adr:#2ca02c;    /* ADR */
+  --rev:#0a84ff;    /* Rev bar */
+}
+*{box-sizing:border-box}
+body{
+  font-family:Arial,Helvetica,sans-serif;
+  margin:0;
+  padding:12px;
+  color:#111;
+  background:#fff;
+}
+h1{margin:0 0 6px 0;font-size:22px;font-weight:800;text-align:center;}
+h2{margin:0 0 10px 0;font-size:15px;font-weight:600;text-align:center;color:#333;}
+.toolbar,.toolbar2,.toolbar3{
+  display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;margin:8px 0 10px;
+}
+.toolbar select,.toolbar input[type="text"],.toolbar input[type="date"],.toolbar2 input[type="text"]{
+  padding:6px 8px;border:1px solid #ccc;border-radius:8px;min-width:220px;
+}
+.toolbar button{
+  padding:10px 14px;border:0;border-radius:10px;background:#111;color:#fff;cursor:pointer;
+}
+#chart{width:100%;height:72vh;}
+#status{
+  margin:8px auto;max-width:1200px;font-size:12px;color:#333;background:#f7f7f7;
+  border:1px solid #e5e5e5;border-radius:8px;padding:8px;white-space:pre-wrap;
+}
+label{font-size:12px;color:#333}
+.gb-label{color:var(--wed);font-size:11px;font-weight:700;}
+.error{color:#b00020;font-weight:bold}
+
+/* Mobile */
+@media (max-width: 768px){
+  body{padding:8px}
+  h1{font-size:18px}
+  h2{font-size:13px}
+  .toolbar{gap:6px}
+  .toolbar select,.toolbar input[type="date"]{min-width:150px;font-size:14px;}
+  .toolbar button{padding:10px 12px;font-size:14px;}
+  .toolbar2{display:none;}
+  .toolbar3 label{font-size:13px}
+  #chart{height:70vh}
+}
+/* Very small */
+@media (max-width: 480px){
+  .toolbar{justify-content:space-between}
+  .toolbar > *{flex:1 1 48%}
+  .toolbar button{flex:1 1 100%}
+  #chart{height:68vh}
+}
+
+/* Preloader */
+#preloader{
+  position:fixed;inset:0;background:#fff;display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:18px;z-index:9999;
+}
+.spinner{
+  width:18px;height:18px;border-radius:50%;border:3px solid #ddd;border-top-color:#111;
+  margin-right:10px;animation:spin 0.9s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="preloader"><div class="spinner"></div>Đang khởi tạo biểu đồ…</div>
+
+<h1 id="titleH1">TAHITI BEACH HOTEL</h1>
+<h2 id="titleH2">Briefing view – Tuần trước, tuần này và 2 tuần kế tiếp</h2>
+
+<div class="toolbar">
+  <label>Cơ sở:</label>
+  <select id="hotelSelect">
+    <option value="TBH">Tahiti Beach Hotel</option>
+    <option value="TR">Tahiti Resort</option>
+    <option value="TC">Tahiti Central</option>
+    <option value="HTR">Hồng Tuyết Riverside</option>
+  </select>
+
+  <label>Chế độ hiển thị:</label>
+  <select id="modeSelect">
+    <option value="BRIEFING" selected>Briefing view</option>
+    <option value="MONTHLY">Monthly view</option>
+  </select>
+
+  <label>Mục ngày chọn:</label>
+  <input id="meetingDate" type="date" />
+
+  <button id="renderBtn">Vẽ lại</button>
+  <button id="exportBtn">🖼️ Tải PNG (ẩn summary)</button>
+</div>
+
+<div class="toolbar2">
+  <label>Google Sheets CSV (tùy chỉnh):</label>
+  <input id="csvUrl" type="text" placeholder="(Tuỳ chọn) Dán link CSV khác nếu muốn…">
+</div>
+
+<div class="toolbar3">
+  <label><input id="toggleCSP" type="checkbox" checked> Hiển thị CSP</label>
+  <label><input id="toggleADR" type="checkbox"> Hiển thị ADR</label>
+  <label><input id="toggleREV" type="checkbox"> Hiển thị Room Revenue</label>
+  <label><input id="toggleGBLabel" type="checkbox" checked> Hiển thị chữ "Giao ban"</label>
+</div>
+
+<div id="chart"></div>
+<div id="status">v12m8_final: thêm mini table trend theo tháng (M-1 / M / M+1 / YoY) + MoM 3 dòng CSP/ADR/DT, góc phải dưới.</div>
+
+<script>
+const PRESETS = {
+  "TBH": {
+    title: "TAHITI BEACH HOTEL",
+    csv: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTrCaHX73UYmyHKeuwGb76mGq-JOtPM4MC75DC09zUUPqXXKw1uiDa0cVgDu8zi3w/pub?gid=1366109607&single=true&output=csv"
+  },
+  "TR": {
+    title: "TAHITI RESORT",
+    csv: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTrCaHX73UYmyHKeuwGb76mGq-JOtPM4MC75DC09zUUPqXXKw1uiDa0cVgDu8zi3w/pub?gid=1949035251&single=true&output=csv"
+  },
+  "TC": {
+    title: "TAHITI CENTRAL",
+    csv: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTrCaHX73UYmyHKeuwGb76mGq-JOtPM4MC75DC09zUUPqXXKw1uiDa0cVgDu8zi3w/pub?gid=742745253&single=true&output=csv"
+  },
+  "HTR": {
+    title: "HỒNG TUYẾT RIVERSIDE",
+    csv: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTrCaHX73UYmyHKeuwGb76mGq-JOtPM4MC75DC09zUUPqXXKw1uiDa0cVgDu8zi3w/pub?gid=626348031&single=true&output=csv"
+  }
+};
+
+let _annotationsBackup=null, _summaryIndex=null;
+
+/* Helpers */
+function setStatus(msg,isError){
+  const el=document.getElementById('status');
+  el.innerHTML=(isError?'<span class="error">LỖI: </span>':'')+msg;
+}
+function splitLines(t){return t.replace(/\\r/g,'').split('\\n');}
+function parseCSV(text){
+  const lines=splitLines(text).filter(Boolean);
+  const headers=lines[0].split(',').map(s=>s.trim());
+  const rows=[];
+  for(let i=1;i<lines.length;i++){
+    const cols=lines[i].split(',');
+    const row={};
+    for(let j=0;j<headers.length;j++){
+      row[headers[j]]=(cols[j]||'').trim();
+    }
+    rows.push(row);
+  }
+  return {headers,rows};
+}
+function parseDate(s){
+  if(!s) return null;
+  if(/^\\d{2}\\/\\d{2}\\/\\d{4}$/.test(s)){
+    const dd=+s.slice(0,2),mm=+s.slice(3,5),yy=+s.slice(6,10);
+    return new Date(yy,mm-1,dd);
+  }
+  if(/^\\d{4}-\\d{2}-\\d{2}$/.test(s)){
+    const yy=+s.slice(0,4),mm=+s.slice(5,7),dd=+s.slice(8,10);
+    return new Date(yy,mm-1,dd);
+  }
+  const d=new Date(s);
+  return isNaN(d.getTime())?null:d;
+}
+function numPercent(v){
+  if(v==null) return null;
+  let s=String(v).replace(/[^0-9.-]/g,''), n=parseFloat(s);
+  if(isNaN(n)) return null;
+  if(n<=1) n*=100;
+  return Math.round(n);
+}
+function numMoney(v){
+  if(v==null) return null;
+  let s=String(v).replace(/[^0-9-]/g,'');
+  if(!s) return null;
+  return parseInt(s,10);
+}
+function fmtDDMM(d){
+  const dd=('0'+d.getDate()).slice(-2), mm=('0'+(d.getMonth()+1)).slice(-2);
+  return dd+'/'+mm;
+}
+function fmtDDMMYYYY(d){
+  const dd=('0'+d.getDate()).slice(-2), mm=('0'+(d.getMonth()+1)).slice(-2), yy=d.getFullYear();
+  return dd+'/'+mm+'/'+yy;
+}
+function fmtMonthYYYY(d){
+  const mm=('0'+(d.getMonth()+1)).slice(-2), yy=d.getFullYear();
+  return mm+'/'+yy;
+}
+function fmtMil(n){
+  if(n==null || isNaN(n)) return '';
+  return (n/1e6).toFixed(1).replace(/\\.0$/,'')+'M';
+}
+function fmtMilADR(n){
+  if(n==null || isNaN(n)) return '';
+  return (n/1e6).toFixed(2)+'M';
+}
+function viMoney(n){
+  try{return Number(n||0).toLocaleString('vi-VN');}
+  catch(e){return n;}
+}
+function getKey(headers,target){
+  const norm=s=>s.toLowerCase().replace(/\\s+/g,' ').trim();
+  const want=norm(target);
+  for(const h of headers){ if(norm(h)===want) return h; }
+  return null;
+}
+function lastWednesday(date){
+  const d=new Date(date.getFullYear(),date.getMonth(),date.getDate());
+  const day=d.getDay();
+  const diff=(day>=3)?day-3:day+4;
+  d.setDate(d.getDate()-diff);
+  return d;
+}
+function makeWindows(viewMode,pickStr){
+  const day=24*3600*1000;
+  if(viewMode==='MONTHLY' && pickStr){
+    const d=parseDate(pickStr); if(!d) return null;
+    if(d.getDate()===1){
+      const end=new Date(d.getFullYear(),d.getMonth()+1,0);
+      return {start:d,end:end,title:'Monthly view – Tháng '+fmtMonthYYYY(d),monthly:true,monthText:fmtMonthYYYY(d)};
+    }else{
+      const end=new Date(d.getTime()+30*day);
+      return {start:d,end:end,title:'Monthly view ('+fmtDDMM(d)+' → '+fmtDDMM(end)+')',monthly:true,monthText:fmtMonthYYYY(d)};
+    }
+  }else{
+    let meeting=pickStr?parseDate(pickStr):lastWednesday(new Date());
+    if(!meeting) meeting=lastWednesday(new Date());
+    return {
+      start:new Date(meeting.getTime()-7*day),
+      end:new Date(meeting.getTime()+21*day),
+      title:'Briefing view – Tuần trước, tuần này và 2 tuần kế tiếp',
+      monthly:false,
+      meeting
+    };
+  }
+}
+// Monthly helpers for table
+function ymKey(d){
+  const y=d.getFullYear();
+  const m=('0'+(d.getMonth()+1)).slice(-2);
+  return `${y}-${m}`;
+}
+function addMonths(d,delta){ return new Date(d.getFullYear(), d.getMonth()+delta, 1); }
+function pct(n){
+  if(n==null || isNaN(n)) return '—';
+  const s=(n*100).toFixed(1);
+  return (n>=0?('↑'+s+'%'):('↓'+Math.abs(+s).toFixed(1)+'%'));
+}
+function momLine(label, v){
+  if(v==null) return `<div style="color:#666">${label}: —</div>`;
+  const color = v<0 ? '#D60000' : '#0A7F2E';
+  return `<div style="color:${color}; font-weight:800">${label}: ${pct(v)}</div>`;
+}
+function momBlockHTML(m){
+  return `
+    <div style="line-height:1.15; font-size:10.5px;">
+      ${momLine('CSP', m.csp)}
+      ${momLine('ADR', m.adr)}
+      ${momLine('DT',  m.rev)}
+    </div>
+  `;
+}
+
+/* Render */
+async function render(){
+  try{
+    const sel=document.getElementById('hotelSelect').value;
+    const preset=PRESETS[sel];
+    document.getElementById('titleH1').innerText=preset.title;
+
+    const csvInput=document.getElementById('csvUrl');
+    if(!csvInput.value) csvInput.value=preset.csv;
+    const csvUrl=csvInput.value.trim();
+
+    const viewMode=document.getElementById('modeSelect').value;
+    const pickStr=document.getElementById('meetingDate').value;
+    const showCSP=document.getElementById('toggleCSP').checked;
+    const showADR=document.getElementById('toggleADR').checked;
+    const showREV=document.getElementById('toggleREV').checked;
+    const showGBLabel=document.getElementById('toggleGBLabel').checked;
+
+    setStatus('Đang tải CSV…\\n'+csvUrl);
+
+    const res=await fetch(csvUrl,{cache:'no-store'});
+    if(!res.ok) throw new Error('Không tải được CSV. HTTP '+res.status);
+    const raw=await res.text();
+    const {headers,rows}=parseCSV(raw);
+
+    const kDate=getKey(headers,'Date');
+    const kOccRooms=getKey(headers,'Occupied');
+    const kOccPct=getKey(headers,'Occupancy');
+    const kRev=getKey(headers,'Room Revenue');
+    const kADR=getKey(headers,'ADR');
+    if(!kDate||!kOccRooms||!kOccPct){
+      throw new Error('Thiếu cột bắt buộc: Date, Occupied, Occupancy.\\nHeaders: '+headers.join(' | '));
+    }
+
+    const arr=[];
+    for(const r of rows){
+      const d=parseDate(r[kDate]); if(!d) continue;
+      const occ=numPercent(r[kOccPct]);
+      const occRooms=numMoney(r[kOccRooms]);
+      const adr=kADR?numMoney(r[kADR]):null;
+      const rev=kRev?numMoney(r[kRev]):null;
+      arr.push({d,occ,occRooms,adr,rev});
+    }
+    if(arr.length===0) throw new Error('Không có dữ liệu hợp lệ.');
+    arr.sort((a,b)=>a.d-b.d);
+
+    const win=makeWindows(viewMode,pickStr);
+    if(!win) throw new Error('Không xác định được cửa sổ dữ liệu.');
+    const data=arr.filter(o=>o.d>=win.start && o.d<=win.end);
+    if(data.length===0) throw new Error('Không có dữ liệu trong cửa sổ đã chọn.');
+
+    const dates=data.map(o=>o.d);
+    const occ=data.map(o=>o.occ);
+    const rooms=data.map(o=>o.occRooms);
+    const adrVals=data.map(o=>o.adr);
+    const revVals=data.map(o=>o.rev);
+
+    const hasAdrData=adrVals.some(v=>v!=null && !isNaN(v));
+    const hasRevData=revVals.some(v=>v!=null && !isNaN(v));
+
+    const useCSP = showCSP;
+    const useADR = showADR && hasAdrData;
+    const useREV = showREV && hasRevData;
+    const useMoney = useADR || useREV;
+
+    const traces=[];
+    const shapes=[];
+    const annotations=[];
+
+    document.getElementById('titleH2').innerText=win.title;
+
+    /* === Traces với mapping trục rõ ràng === */
+    // 1) Room Revenue (vẽ trước)
+    if(useREV){
+      let yaxisRev='y';
+      if(useCSP && useMoney){
+        yaxisRev='y2'; // có CSP -> tiền sang phải
+      }else if(!useCSP && useADR && useREV){
+        yaxisRev='y';  // ADR+REV: REV trái
+      }
+      traces.push({
+        x:dates,y:revVals,type:'bar',
+        name:'Room Revenue (VND/ngày)',
+        marker:{color:getComputedStyle(document.documentElement).getPropertyValue('--rev').trim()},
+        opacity:0.95,
+        text:revVals.map(v=>(v||v===0)?fmtMil(v):''),
+        textposition:'outside',
+        textfont:{size:12},
+        yaxis:yaxisRev
+      });
+    }
+
+    // 2) ADR (line)
+    if(useADR){
+      let yaxisADR='y';
+      if(useCSP && useMoney) yaxisADR='y2';
+      else if(!useCSP && useADR && useREV) yaxisADR='y2';
+      else if(useCSP && useADR && !useREV) yaxisADR='y2';
+
+      const textShort=adrVals.map(v=>v!=null?fmtMilADR(v):'');
+      const hoverData=adrVals.map((v,i)=>v!=null
+        ?('<b>'+fmtDDMM(dates[i])+'</b><br>ADR: '+viMoney(v)+' VND')
+        :'');
+      traces.push({
+        x:dates,y:adrVals,type:'scatter',
+        mode:'lines+markers+text',
+        name:'ADR (VND)',
+        line:{width:2,color:getComputedStyle(document.documentElement).getPropertyValue('--adr').trim()},
+        marker:{size:6,color:getComputedStyle(document.documentElement).getPropertyValue('--adr').trim()},
+        text:textShort,textposition:'top center',textfont:{size:10},
+        hovertemplate:'%{customdata}<extra></extra>',
+        customdata:hoverData,
+        yaxis:yaxisADR
+      });
+    }
+
+    // 3) CSP
+    if(useCSP){
+      const labels=occ.map((v,i)=>v!=null?(v+'%<br>('+(Math.round(rooms[i]||0))+'p)'):'');
+      const textpos=occ.map(v=>v>90?'bottom center':'top center');
+      traces.push({
+        x:dates,y:occ,type:'scatter',
+        mode:'lines+markers+text',
+        name:'Công suất phòng (%)',
+        line:{width:2,color:getComputedStyle(document.documentElement).getPropertyValue('--occ').trim()},
+        marker:{size:6,color:getComputedStyle(document.documentElement).getPropertyValue('--occ').trim()},
+        text:labels,textposition:textpos,textfont:{size:11,family:'Arial'},
+        yaxis:'y'
+      });
+    }
+
+    /* === Tiêu đề === */
+    const hotelTitle=PRESETS[document.getElementById('hotelSelect').value].title;
+    if(viewMode==='BRIEFING'){
+      const l1='<span style="font-size:16px;font-weight:800;">'+hotelTitle+'</span>';
+      const l2='<span style="font-size:12px;font-weight:600;">Briefing view – từ '+fmtDDMMYYYY(win.start)+' đến '+fmtDDMMYYYY(win.end)+'</span>';
+      annotations.push({x:0,y:1.13,xref:'paper',yref:'paper',xanchor:'left',yanchor:'top',showarrow:false,text:l1+'<br>'+l2});
+    }else{
+      const l1='<span style="font-size:16px;font-weight:800;">'+hotelTitle+'</span>';
+      const l2='<span style="font-size:12px;font-weight:600;">Monthly view – Tháng '+win.monthText+'</span>';
+      annotations.push({x:0,y:1.13,xref:'paper',yref:'paper',xanchor:'left',yanchor:'top',showarrow:false,text:l1+'<br>'+l2});
+    }
+
+    /* === Briefing: nền tuần, Giao ban, đường TB === */
+    if(viewMode==='BRIEFING'){
+      const day=24*3600*1000;
+      const meeting=win.meeting;
+
+      shapes.push({
+        type:'rect',xref:'x',yref:'paper',
+        x0:meeting,x1:new Date(meeting.getTime()+7*day),
+        y0:0,y1:1,
+        fillcolor:getComputedStyle(document.documentElement).getPropertyValue('--week').trim(),
+        opacity:0.35,line:{width:0}
+      });
+
+      const marks=[
+        new Date(meeting.getTime()-7*day),
+        meeting,
+        new Date(meeting.getTime()+7*day),
+        new Date(meeting.getTime()+14*day),
+        new Date(meeting.getTime()+21*day)
+      ];
+      for(const d of marks){
+        shapes.push({
+          type:'line',xref:'x',yref:'paper',
+          x0:d,x1:d,y0:0,y1:1,
+          line:{color:getComputedStyle(document.documentElement).getPropertyValue('--wed').trim(),width:1.5,dash:'dash'}
+        });
+        if(showGBLabel){
+          annotations.push({
+            x:d,y:0,xref:'x',yref:'paper',
+            showarrow:false,
+            text:'<span class="gb-label">Giao ban</span>',
+            textangle:-90,yshift:18
+          });
+        }
+      }
+
+      const avgColor=getComputedStyle(document.documentElement).getPropertyValue('--avg').trim();
+      function seg(s){return{s:s,e:new Date(s.getTime()+7*day)};}
+      function avgOccSeg(s,e){
+        let sum=0,n=0;
+        for(let i=0;i<dates.length;i++){
+          if(dates[i]>=s && dates[i]<=e && occ[i]!=null){sum+=occ[i];n++;}
+        }
+        return n?sum/n:null;
+      }
+      function avgADRSeg(s,e){
+        let sum=0,n=0;
+        for(let i=0;i<dates.length;i++){
+          if(dates[i]>=s && dates[i]<=e && adrVals[i]!=null){sum+=adrVals[i];n++;}
+        }
+        return n?sum/n:null;
+      }
+      const segs=[
+        seg(new Date(meeting.getTime()-7*day)),
+        seg(meeting),
+        seg(new Date(meeting.getTime()+7*day)),
+        seg(new Date(meeting.getTime()+14*day))
+      ];
+
+      if(useCSP){
+        for(const S of segs){
+          const a=avgOccSeg(S.s,S.e);
+          if(a==null) continue;
+          const xs=S.s<dates[0]?dates[0]:S.s;
+          const xe=S.e>dates[dates.length-1]?dates[dates.length-1]:S.e;
+          shapes.push({type:'line',xref:'x',yref:'y',x0:xs,x1:xe,y0:a,y1:a,line:{color:avgColor,width:2}});
+          annotations.push({
+            x:xe,y:a,xref:'x',yref:'y',
+            axref:'x',ayref:'y',ax:xs,ay:a,
+            showarrow:true,arrowside:'end+start',
+            arrowhead:3,startarrowhead:3,
+            arrowwidth:1.6,arrowcolor:avgColor,text:''
+          });
+          annotations.push({
+            x:xs,y:a,xref:'x',yref:'y',
+            showarrow:false,
+            text:'<span style="color:'+avgColor+';font-weight:800;font-family:Arial Black;">TB: '+Math.round(a)+'%</span>',
+            xanchor:'left',yanchor:'bottom',xshift:6
+          });
+        }
+      } else if(!useCSP && useADR && !useREV){
+        for(const S of segs){
+          const a=avgADRSeg(S.s,S.e);
+          if(a==null) continue;
+          const xs=S.s<dates[0]?dates[0]:S.s;
+          const xe=S.e>dates[dates.length-1]?dates[dates.length-1]:S.e;
+          shapes.push({type:'line',xref:'x',yref:'y',x0:xs,x1:xe,y0:a,y1:a,line:{color:avgColor,width:2}});
+          annotations.push({
+            x:xe,y:a,xref:'x',yref:'y',
+            axref:'x',ayref:'y',ax:xs,ay:a,
+            showarrow:true,arrowside:'end+start',
+            arrowhead:3,startarrowhead:3,
+            arrowwidth:1.6,arrowcolor:avgColor,text:''
+          });
+          annotations.push({
+            x:xs,y:a,xref:'x',yref:'y',
+            showarrow:false,
+            text:'<span style="color:'+avgColor+';font-weight:800;font-family:Arial Black;">TB: '+fmtMilADR(a)+'</span>',
+            xanchor:'left',yanchor:'bottom',xshift:6
+          });
+        }
+      }
+    }
+
+    /* ===== MONTHLY MINI TABLE (Prev / Current / Next / YoY) + MoM 3 lines ===== */
+    function buildMonthlyMap(arrAll){
+      const map=new Map();
+      for(const o of arrAll){
+        const k=ymKey(o.d);
+        if(!map.has(k)) map.set(k,{cspSum:0,cspN:0,adrSum:0,adrN:0,revSum:0});
+        const m=map.get(k);
+        if(o.occ!=null){ m.cspSum+=o.occ; m.cspN++; }
+        if(o.adr!=null){ m.adrSum+=o.adr; m.adrN++; }
+        if(o.rev!=null){ m.revSum+=o.rev; }
+      }
+      const out=new Map();
+      for(const [k,v] of map.entries()){
+        out.set(k,{
+          cspAvg: v.cspN? (v.cspSum/v.cspN): null,
+          adrAvg: v.adrN? (v.adrSum/v.adrN): null,
+          revSum: (v.revSum||v.revSum===0)? v.revSum : null
+        });
+      }
+      return out;
+    }
+    const monthlyMap = buildMonthlyMap(arr);
+
+    // focus month = tháng đang xem trên chart
+    let focusMonthDate;
+    if(viewMode==='MONTHLY' && pickStr){
+      const dPick=parseDate(pickStr);
+      focusMonthDate = new Date(dPick.getFullYear(), dPick.getMonth(), 1);
+    }else{
+      const meet = win.meeting || lastWednesday(new Date());
+      focusMonthDate = new Date(meet.getFullYear(), meet.getMonth(), 1);
+    }
+
+    const mPrev = addMonths(focusMonthDate,-1);
+    const mCur  = addMonths(focusMonthDate, 0);
+    const mNext = addMonths(focusMonthDate, 1);
+    const mYoY  = new Date(focusMonthDate.getFullYear()-1, focusMonthDate.getMonth(), 1);
+
+    function getMonthRow(dMonth){
+      const key=ymKey(dMonth);
+      const v=monthlyMap.get(key) || {};
+      return {
+        label: ('0'+(dMonth.getMonth()+1)).slice(-2)+'/'+dMonth.getFullYear(),
+        csp: (v.cspAvg!=null)? Math.round(v.cspAvg) : null,
+        adr: (v.adrAvg!=null)? Math.round(v.adrAvg) : null,
+        rev: (v.revSum!=null)? v.revSum : null
+      };
+    }
+    const rPrev=getMonthRow(mPrev);
+    const rCur =getMonthRow(mCur);
+    const rNext=getMonthRow(mNext);
+    const rYoY =getMonthRow(mYoY);
+
+    function mom(a,b){
+      if(a==null || b==null || b===0) return null;
+      return (a-b)/b;
+    }
+    const momCur = { csp:mom(rCur.csp,rPrev.csp), adr:mom(rCur.adr,rPrev.adr), rev:mom(rCur.rev,rPrev.rev) };
+    const momNext= { csp:mom(rNext.csp,rCur.csp), adr:mom(rNext.adr,rCur.adr), rev:mom(rNext.rev,rCur.rev) };
+
+    const tableHTML = `
+<div style="font-family:Arial; font-size:11px; line-height:1.25;
+  background:rgba(255,255,255,0.92); border:1px solid rgba(0,0,0,0.12);
+  border-radius:10px; padding:8px 10px; box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+  <div style="font-weight:900; margin-bottom:6px;">Trend theo tháng</div>
+  <table style="border-collapse:collapse; min-width:420px;">
+    <tr>
+      <th style="text-align:left; padding:4px 6px; border-bottom:1px solid rgba(0,0,0,0.10);">Tháng</th>
+      <th style="text-align:right; padding:4px 6px; border-bottom:1px solid rgba(0,0,0,0.10);">CSP</th>
+      <th style="text-align:right; padding:4px 6px; border-bottom:1px solid rgba(0,0,0,0.10);">ADR</th>
+      <th style="text-align:right; padding:4px 6px; border-bottom:1px solid rgba(0,0,0,0.10);">DT</th>
+      <th style="text-align:left; padding:4px 6px; border-bottom:1px solid rgba(0,0,0,0.10);">MoM</th>
+    </tr>
+
+    <tr>
+      <td style="padding:4px 6px;">${rPrev.label} (M-1)</td>
+      <td style="padding:4px 6px; text-align:right;">${rPrev.csp!=null? (rPrev.csp+'%'):'—'}</td>
+      <td style="padding:4px 6px; text-align:right;">${rPrev.adr!=null? viMoney(rPrev.adr):'—'}</td>
+      <td style="padding:4px 6px; text-align:right;">${rPrev.rev!=null? viMoney(rPrev.rev):'—'}</td>
+      <td style="padding:4px 6px; text-align:left; color:#666;">—</td>
+    </tr>
+
+    <tr>
+      <td style="padding:4px 6px; font-weight:900;">${rCur.label} (M)</td>
+      <td style="padding:4px 6px; text-align:right; font-weight:900;">${rCur.csp!=null? (rCur.csp+'%'):'—'}</td>
+      <td style="padding:4px 6px; text-align:right; font-weight:900;">${rCur.adr!=null? viMoney(rCur.adr):'—'}</td>
+      <td style="padding:4px 6px; text-align:right; font-weight:900;">${rCur.rev!=null? viMoney(rCur.rev):'—'}</td>
+      <td style="padding:4px 6px; text-align:left;">${momBlockHTML(momCur)}</td>
+    </tr>
+
+    <tr>
+      <td style="padding:4px 6px;">${rNext.label} (M+1)</td>
+      <td style="padding:4px 6px; text-align:right;">${rNext.csp!=null? (rNext.csp+'%'):'—'}</td>
+      <td style="padding:4px 6px; text-align:right;">${rNext.adr!=null? viMoney(rNext.adr):'—'}</td>
+      <td style="padding:4px 6px; text-align:right;">${rNext.rev!=null? viMoney(rNext.rev):'—'}</td>
+      <td style="padding:4px 6px; text-align:left;">${momBlockHTML(momNext)}</td>
+    </tr>
+
+    <tr>
+      <td style="padding:4px 6px; border-top:1px dashed rgba(0,0,0,0.15);">${rYoY.label} (YoY)</td>
+      <td style="padding:4px 6px; text-align:right; border-top:1px dashed rgba(0,0,0,0.15);">${rYoY.csp!=null? (rYoY.csp+'%'):'—'}</td>
+      <td style="padding:4px 6px; text-align:right; border-top:1px dashed rgba(0,0,0,0.15);">${rYoY.adr!=null? viMoney(rYoY.adr):'—'}</td>
+      <td style="padding:4px 6px; text-align:right; border-top:1px dashed rgba(0,0,0,0.15);">${rYoY.rev!=null? viMoney(rYoY.rev):'—'}</td>
+      <td style="padding:4px 6px; text-align:left; border-top:1px dashed rgba(0,0,0,0.15); color:#666;">—</td>
+    </tr>
+  </table>
+</div>
+`;
+
+    // Add table (góc phải dưới)
+    annotations.push({
+      x: 1, y: 0.02, xref:'paper', yref:'paper',
+      xanchor:'right', yanchor:'bottom',
+      text: tableHTML,
+      showarrow:false,
+      align:'left'
+    });
+
+    /* === Summary góc phải === */
+    const avgOccAll = occ.filter(v=>v!=null).length
+      ? Math.round(occ.filter(v=>v!=null).reduce((a,b)=>a+b,0)/occ.filter(v=>v!=null).length)
+      : 0;
+    const avgADRAll = hasAdrData
+      ? Math.round(adrVals.filter(v=>v!=null).reduce((a,b)=>a+b,0)/adrVals.filter(v=>v!=null).length)
+      : null;
+    const sumRevAll = hasRevData
+      ? revVals.filter(v=>v!=null).reduce((a,b)=>a+b,0)
+      : null;
+
+    const summaryHTML =
+      '<span style="color:#111;font-weight:700;">Bình quân CSP: '
+      +(isFinite(avgOccAll)?avgOccAll:0)+'%</span>'
+      +' &nbsp; | &nbsp; <span style="color:#2ca02c;font-weight:700;">Bình quân ADR: '
+      +(avgADRAll!=null?viMoney(avgADRAll):'—')+' VND</span>'
+      +' &nbsp; | &nbsp; <span style="color:#0057D9;font-weight:800;">Tổng DT dự kiến: '
+      +(sumRevAll!=null?viMoney(sumRevAll):'—')+' VND</span>';
+
+    const summaryAnnotation={
+      x:1,y:1.13,xref:'paper',yref:'paper',
+      xanchor:'right',yanchor:'top',
+      text:summaryHTML,
+      showarrow:false,
+      font:{size:13,family:'Arial'},
+      bgcolor:'rgba(255,255,255,0.9)',
+      borderpad:2
+    };
+    annotations.push(summaryAnnotation);
+    _summaryIndex=annotations.length-1;
+
+    /* === Layout & Axis cấu hình theo tổ hợp === */
+    const layout={
+      margin:{l:70,r:70,t:90,b:60},
+      xaxis:{
+        tickmode:'array',
+        tickvals:dates,
+        ticktext:dates.map(fmtDDMM),
+        tickangle:-45,
+        showgrid:true,
+        gridcolor:'rgba(0,0,0,0.15)'
+      },
+      shapes:(viewMode==='MONTHLY')?[]:shapes,
+      annotations:annotations,
+      showlegend:true,
+      legend:{x:1,y:1,xanchor:'right',yanchor:'top',bgcolor:'rgba(255,255,255,0.85)'}
+    };
+
+    if(useCSP){
+      layout.yaxis = {
+        title:'Công suất phòng (%)',
+        rangemode:'tozero',
+        showgrid:true,
+        gridcolor:'rgba(0,0,0,0.15)'
+      };
+      if(useMoney){
+        layout.yaxis2 = {
+          title:'Giá trị (VND)',
+          anchor:'x',
+          overlaying:'y',
+          side:'right',
+          rangemode:'tozero'
+        };
+      }
+    }else if(!useCSP && useADR && useREV){
+      layout.yaxis = {
+        title:'Room Revenue (VND/ngày)',
+        rangemode:'tozero',
+        showgrid:true,
+        gridcolor:'rgba(0,0,0,0.15)'
+      };
+      layout.yaxis2 = {
+        title:'ADR (VND)',
+        anchor:'x',
+        overlaying:'y',
+        side:'right',
+        rangemode:'tozero'
+      };
+    }else if(!useCSP && useADR && !useREV){
+      layout.yaxis = {
+        title:'ADR (VND)',
+        rangemode:'tozero',
+        showgrid:true,
+        gridcolor:'rgba(0,0,0,0.15)'
+      };
+    }else if(!useCSP && useREV && !useADR){
+      layout.yaxis = {
+        title:'Room Revenue (VND/ngày)',
+        rangemode:'tozero',
+        showgrid:true,
+        gridcolor:'rgba(0,0,0,0.15)'
+      };
+    }else if(useCSP && !useMoney){
+      layout.yaxis = {
+        title:'Công suất phòng (%)',
+        rangemode:'tozero',
+        showgrid:true,
+        gridcolor:'rgba(0,0,0,0.15)'
+      };
+    }else{
+      layout.yaxis = {
+        title:'',
+        rangemode:'tozero',
+        showgrid:true,
+        gridcolor:'rgba(0,0,0,0.15)'
+      };
+    }
+
+    await Plotly.newPlot('chart',traces,layout,{responsive:true,displaylogo:false});
+    _annotationsBackup=annotations.map(a=>Object.assign({},a));
+
+    const pr=document.getElementById('preloader'); if(pr) pr.style.display='none';
+
+    setStatus(
+      'CSV OK. '+win.title+
+      '\\nCSP='+showCSP+' | ADR='+showADR+' | REV='+showREV+
+      '\\nADR data: '+hasAdrData+' | Revenue data: '+hasRevData+
+      '\\n(v12m8_final: Table góc phải dưới, MoM 3 dòng CSP/ADR/DT).'
+    );
+  }catch(err){
+    console.error(err);
+    setStatus(err.message,true);
+    const pr=document.getElementById('preloader'); if(pr) pr.style.display='none';
+  }
+}
+
+/* Export PNG (ẩn summary) */
+async function exportPNG(){
+  try{
+    const gd=document.getElementById('chart');
+    if(_summaryIndex==null || !_annotationsBackup){
+      await Plotly.downloadImage(gd,{format:'png',filename:'chart'});
+      return;
+    }
+    await Plotly.relayout(gd,{
+      'annotations': _annotationsBackup.filter((_,i)=>i!==_summaryIndex)
+    });
+    const filename=(document.getElementById('titleH1').innerText||'chart')
+      .replace(/\\s+/g,'_')+'_noSummary';
+    await Plotly.downloadImage(gd,{format:'png',filename:filename});
+    await Plotly.relayout(gd,{'annotations':_annotationsBackup});
+  }catch(e){
+    console.error(e);
+    setStatus('Xuất PNG lỗi: '+e.message,true);
+  }
+}
+
+/* Mobile tweaks */
+function isMobile(){
+  const ua=navigator.userAgent || navigator.vendor || window.opera;
+  return (/android/i.test(ua) || /iPad|iPhone|iPod/.test(ua) || (window.innerWidth<=768));
+}
+function applyMobileTweaks(){
+  if(isMobile()){
+    document.body.classList.add('is-mobile');
+    const t2=document.querySelector('.toolbar2');
+    if(t2) t2.style.display='none';
+  }
+}
+
+/* Events */
+document.getElementById('hotelSelect').addEventListener('change', ()=>{
+  const p=PRESETS[document.getElementById('hotelSelect').value];
+  document.getElementById('csvUrl').value=p.csv;
+  document.getElementById('titleH1').innerText=p.title;
+});
+document.getElementById('renderBtn').addEventListener('click', render);
+document.getElementById('toggleCSP').addEventListener('change', render);
+document.getElementById('toggleADR').addEventListener('change', render);
+document.getElementById('toggleREV').addEventListener('change', render);
+document.getElementById('toggleGBLabel').addEventListener('change', render);
+document.getElementById('modeSelect').addEventListener('change', render);
+document.getElementById('exportBtn').addEventListener('click', exportPNG);
+
+/* Init */
+document.addEventListener('DOMContentLoaded', ()=>{
+  const start=Date.now();
+  (function waitPlotly(){
+    if(window.Plotly){
+      const p=PRESETS['TBH'];
+      document.getElementById('hotelSelect').value='TBH';
+      document.getElementById('csvUrl').value=p.csv;
+      document.getElementById('titleH1').innerText=p.title;
+      const today=new Date();
+      const yyyy=today.getFullYear();
+      const mm=('0'+(today.getMonth()+1)).slice(-2);
+      const dd=('0'+today.getDate()).slice(-2);
+      document.getElementById('meetingDate').value = yyyy+'-'+mm+'-'+dd;
+      applyMobileTweaks();
+      render();
+    }else{
+      if(Date.now()-start>8000){
+        setStatus('Không tải được Plotly từ CDN. Vui lòng kiểm tra mạng.',true);
+        const pr=document.getElementById('preloader'); if(pr) pr.style.display='none';
+        return;
+      }
+      setTimeout(waitPlotly,120);
+    }
+  })();
+});
+
+/* Resize */
+window.addEventListener('resize', ()=>{ if(document.getElementById('chart')) Plotly.Plots.resize('chart'); });
+window.addEventListener('orientationchange', ()=>{ setTimeout(()=>{ if(document.getElementById('chart')) Plotly.Plots.resize('chart'); },250); });
+</script>
+</body>
+</html>
