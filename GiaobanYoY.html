@@ -1,0 +1,1191 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+ <title>TAHITI GROUP –  KẾT QUẢ KINH DOANH QUA CÁC NĂM</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+
+  <style>
+    :root{
+      --bg:#ffffff;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --text:#111827;
+      --line:#e5e7eb;
+      --shadow:0 8px 24px rgba(0,0,0,.06);
+      --radius:18px;
+      --pad:18px;
+
+      /* Highlight year (current) */
+      --ocean:#0b3d91; /* xanh nước biển đậm */
+      --oceanLine: rgba(11,61,145,.92);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color:var(--text);
+      background:#fff;
+    }
+    .wrap{max-width:1320px;margin:22px auto;padding:0 16px}
+    h1{margin:0 0 14px 0;font-size:28px;letter-spacing:.2px;font-weight:800}
+
+    .toolbar{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      padding:14px;
+      box-shadow:var(--shadow);
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .ctl{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px 12px;
+    }
+    .ctl label{font-size:13px;color:var(--muted);min-width:62px}
+    select{
+      border:0; outline:none;
+      font-size:14px;
+      font-weight:700;
+      color:var(--text);
+      background:transparent;
+      cursor:pointer;
+    }
+    .btn{
+      border:0; outline:none;
+      padding:11px 14px;
+      border-radius:14px;
+      font-weight:850;
+      cursor:pointer;
+      background:#111827;
+      color:#fff;
+    }
+    .hint{margin-left:auto;font-size:12px;color:var(--muted);white-space:nowrap}
+
+    .grid{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns: 1.9fr 1fr;
+      gap:14px;
+      align-items:start;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:var(--pad);
+    }
+    .card h2{
+      margin:0 0 10px 0;
+      font-size:18px;
+      font-weight:900;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .subtle{font-size:13px;color:var(--muted);font-weight:650}
+    .rule{margin-top:10px;font-size:13px;color:#b45309;font-weight:750}
+
+    .summary{display:flex;flex-direction:column;gap:10px}
+    .summary .asof{font-size:13px;color:var(--muted);font-weight:700;text-align:right}
+    .sumBox{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px 14px;
+      background:#fff;
+    }
+    .sumRow{
+      display:flex;justify-content:space-between;align-items:baseline;
+      padding:7px 0;border-bottom:1px dashed #eef2f7;
+    }
+    .sumRow:last-child{border-bottom:0}
+    .sumKey{font-size:13px;color:var(--muted);font-weight:700}
+    .sumVal{font-size:18px;font-weight:900}
+    .foot{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.35;font-weight:650}
+
+    .tables{margin-top:14px;display:flex;flex-direction:column;gap:12px}
+    .sectionTitle{margin:0 0 10px 0;font-size:18px;font-weight:900}
+
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      overflow:hidden;
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:#fff;
+    }
+    thead th{
+      background:#fafafa;
+      font-weight:900;
+      padding:10px 10px;
+      border-bottom:1px solid var(--line);
+      text-align:right;
+      font-size:13px;
+    }
+    thead th:first-child{text-align:center}
+
+    /* ===== TABLE RULES =====
+       - default cells: NOT bold
+       - lastYear column: bold + ocean
+       - total rows: bold
+    */
+    tbody td{
+      padding:8px 10px;
+      border-bottom:1px solid #f3f4f6;
+      text-align:right;
+      font-size:13px;
+      font-weight:500;        /* NOT bold */
+      color:#111827;
+    }
+    tbody tr:last-child td{border-bottom:0}
+    tbody td:first-child{
+      text-align:center;
+      color:#111827;
+      font-weight:650;
+    }
+    tbody tr.total td{
+      background:#fcfcff;
+      font-weight:900;       /* BQ cả năm + Total revenue bold */
+    }
+    th.lastYear, td.lastYear{
+      color:var(--ocean) !important;
+      font-weight:900 !important;  /* lastYear column bold */
+    }
+
+    canvas{width:100% !important; height:460px !important;}
+    @media (max-width: 1100px){
+      .grid{grid-template-columns:1fr}
+      .hint{margin-left:0}
+      canvas{height:420px !important;}
+    }
+  
+    .grid.single{
+      grid-template-columns: 1fr !important;
+    }
+
+</style>
+</head>
+
+<body>
+  <div class="wrap">
+<h1 id="pageTitle">TAHITI GROUP – KẾT QUẢ KINH DOANH QUA CÁC NĂM</h1>
+
+    <div class="toolbar">
+      <div class="ctl">
+        <label>Mode</label>
+        <select id="mode">
+          <option value="YOY" selected>YoY</option>
+          <option value="ALL">ALL (3 properties)</option>
+        </select>
+      </div>
+
+      <div class="ctl" id="ctlProperty">
+        <label>Property</label>
+        <select id="property"></select>
+      </div>
+
+      <div class="ctl">
+        <label>Metric</label>
+        <select id="metric">
+          <option value="CSP">CSP (Occupancy %)</option>
+          <option value="ADR">ADR</option>
+          <option value="REV">Room Revenue</option>
+        </select>
+      </div>
+
+      <div class="ctl">
+        <label>Chart</label>
+        <select id="chartType">
+          <option value="line">Line</option>
+          <option value="bar" selected>Column</option>
+        </select>
+      </div>
+
+      <div class="ctl">
+        <label>View</label>
+        <select id="viewMode">
+          <option value="YTD" selected>YTD</option>
+          <option value="FULL">Full year</option>
+        </select>
+      </div>
+
+      <div class="ctl" id="ctlYearsShown">
+        <label>Years</label>
+        <select id="yearsShown">
+          <option value="2">2 years</option>
+          <option value="3">3 years</option>
+          <option value="5" selected>5 years</option>
+        </select>
+      </div>
+
+      <div class="ctl">
+        <label>End year</label>
+        <select id="endYear"></select>
+      </div>
+
+      <button class="btn" id="refreshBtn">Refresh</button>
+      <div class="hint" id="status">Ready</div>
+    </div>
+
+    <div class="grid" id="mainGrid">
+      <div class="card">
+        <h2>
+          <span id="chartTitle">Chart</span>
+          <span class="subtle" id="chartSubtitle">So sánh theo năm (monthly)</span>
+        </h2>
+        <canvas id="chart"></canvas>
+        <div class="rule">Rule: Dữ liệu trước ngày áp dụng PMS Ezcloud sẽ bị loại khỏi tính toán (coi như không có dữ liệu).</div>
+      </div>
+
+      <div class="card summary" id="summaryBlock">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+          <div style="font-size:18px;font-weight:950">Summary (YTD + YoY)</div>
+          <div class="asof" id="asOf">As of: -</div>
+        </div>
+
+        <div class="sumBox">
+          <div class="sumRow"><div class="sumKey">YTD CSP</div><div class="sumVal" id="ytdCsp">-</div></div>
+          <div class="sumRow"><div class="sumKey">YTD ADR</div><div class="sumVal" id="ytdAdr">-</div></div>
+          <div class="sumRow"><div class="sumKey">YTD Revenue</div><div class="sumVal" id="ytdRev">-</div></div>
+          <div class="sumRow"><div class="sumKey">YoY CSP</div><div class="sumVal" id="yoyCsp">-</div></div>
+          <div class="sumRow"><div class="sumKey">YoY ADR</div><div class="sumVal" id="yoyAdr">-</div></div>
+          <div class="sumRow"><div class="sumKey">YoY Revenue</div><div class="sumVal" id="yoyRev">-</div></div>
+        </div>
+
+        <div class="foot" id="sourceInfo">Nguồn dữ liệu: PMS EzCloud -</div>
+      </div>
+    </div>
+
+    <div class="tables" id="tablesBlock">
+      <div class="card">
+        <div class="sectionTitle">1) Công suất phòng (CSP)</div>
+        <div id="tableCsp"></div>
+      </div>
+
+      <div class="card">
+        <div class="sectionTitle">2) Giá bình quân (ADR)</div>
+        <div id="tableAdr"></div>
+      </div>
+
+      <div class="card">
+        <div class="sectionTitle">3) Doanh thu phòng (Revenue)</div>
+        <div id="tableRev"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* =========================
+   CONFIG
+========================= */
+const CSV_URLS = {
+  Hotel:   "https://docs.google.com/spreadsheets/d/e/2PACX-1vTrCaHX73UYmyHKeuwGb76mGq-JOtPM4MC75DC09zUUPqXXKw1uiDa0cVgDu8zi3w/pub?gid=1366109607&single=true&output=csv",
+  Resort:  "https://docs.google.com/spreadsheets/d/e/2PACX-1vTrCaHX73UYmyHKeuwGb76mGq-JOtPM4MC75DC09zUUPqXXKw1uiDa0cVgDu8zi3w/pub?gid=1949035251&single=true&output=csv",
+  Central: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTrCaHX73UYmyHKeuwGb76mGq-JOtPM4MC75DC09zUUPqXXKw1uiDa0cVgDu8zi3w/pub?gid=742745253&single=true&output=csv",
+};
+
+const PMS_START = {
+  Hotel:   "2022-06-01",
+  Resort:  "2022-06-01",
+  Central: "2023-02-01",
+};
+
+const MONTH_LABELS = ["T1","T2","T3","T4","T5","T6","T7","T8","T9","T10","T11","T12"];
+
+/* ========= Style: print-friendly ========= */
+// Palette kiểu Google (như ảnh pie chart)
+const OCEAN = "#1a73e8"; // xanh dương nổi bật (end year)
+
+// endYear -> xanh dương, endYear-1 -> xanh lá, endYear-2 -> vàng, endYear-3 -> cam, endYear-4 -> tím, endYear-5 -> đỏ...
+const YEAR_PALETTE = [
+  "#2563EB", // Blue – rõ, sạch
+  "#16A34A", // Green – tươi
+  "#F59E0B", // Amber – ấm
+  "#7C3AED", // Purple – sang
+  "#DC2626", // Red – mạnh vừa
+  "#0891B2", // Teal – dịu
+  "#6B7280", // Gray – dự phòng
+];
+const PROPERTY_COLORS = {
+  Hotel:   "#4285F4", // Blue
+  Resort:  "#34A853", // Green
+  Central: "#A142F4", // Purple
+};
+
+function hexToRgba(hex, a){
+  const h = hex.replace("#","");
+  const r = parseInt(h.substring(0,2),16);
+  const g = parseInt(h.substring(2,4),16);
+  const b = parseInt(h.substring(4,6),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+/* =========================
+   GLOBAL CHART FONT (fix “font trong chart”)
+========================= */
+Chart.register(ChartDataLabels);
+Chart.defaults.font.family = 'ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial';
+Chart.defaults.font.size = 12;
+Chart.defaults.color = "#111827";
+
+/* =========================
+   HELPERS
+========================= */
+function setStatus(msg){ document.getElementById("status").textContent = msg; }
+function parseDDMMYYYY(s){
+  if(!s) return null;
+  const m = String(s).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(!m) return null;
+  const dd = +m[1], mm = +m[2], yy = +m[3];
+  const d = new Date(yy, mm-1, dd);
+  if(d.getFullYear()!==yy || d.getMonth()!==mm-1 || d.getDate()!==dd) return null;
+  return d;
+}
+function safeNum(x){
+  if(x==null) return null;
+  const s = String(x).trim();
+  if(s==="") return null;
+  if(s.endsWith("%")){
+    const v = parseFloat(s.replace("%",""));
+    return Number.isFinite(v) ? v/100 : null;
+  }
+  const v = Number(s.replaceAll(",",""));
+  return Number.isFinite(v) ? v : null;
+}
+function fmtInt(n){
+  if(n==null || !Number.isFinite(n)) return "-";
+  return Math.round(n).toLocaleString("vi-VN");
+}
+function fmtPct0(p){
+  if(p==null || !Number.isFinite(p)) return "";
+  return `${Math.round(p*100)}%`;
+}
+function fmtPct0Dash(p){
+  if(p==null || !Number.isFinite(p)) return "-";
+  return `${Math.round(p*100)}%`;
+}
+function fmtPctYoY(p){
+  if(p==null || !Number.isFinite(p)) return "-";
+  return `${Math.round(p*100)}%`;
+}
+function fmtShortMoney(n){
+  if(n==null || !Number.isFinite(n)) return "";
+  const abs = Math.abs(n);
+  if(abs >= 1e9) return (n/1e9).toFixed(3).replace(/\.?0+$/,"") + "B";
+  if(abs >= 1e6) return (n/1e6).toFixed(3).replace(/\.?0+$/,"") + "M";
+  if(abs >= 1e3) return (n/1e3).toFixed(3).replace(/\.?0+$/,"") + "K";
+  return String(Math.round(n));
+}
+function fmtAdrM(n){
+  if(n==null || !Number.isFinite(n)) return "";
+  return (n/1e6).toFixed(3).replace(/\.?0+$/,"") + "M";
+}
+function yoy(curr, prev){
+  if(curr==null || prev==null) return null;
+  if(!Number.isFinite(curr) || !Number.isFinite(prev)) return null;
+  if(prev === 0) return null;
+  return (curr - prev) / prev;
+}
+function csvParse(text){
+  const rows = [];
+  let cur = [];
+  let val = "";
+  let inQ = false;
+  for(let i=0;i<text.length;i++){
+    const c = text[i];
+    const next = text[i+1];
+    if(inQ){
+      if(c === '"' && next === '"'){ val += '"'; i++; continue; }
+      if(c === '"'){ inQ = false; continue; }
+      val += c; continue;
+    } else {
+      if(c === '"'){ inQ = true; continue; }
+      if(c === ','){ cur.push(val); val=""; continue; }
+      if(c === '\n'){ cur.push(val); rows.push(cur); cur = []; val=""; continue; }
+      if(c === '\r'){ continue; }
+      val += c;
+    }
+  }
+  cur.push(val); rows.push(cur);
+  return rows;
+}
+
+/* =========================
+   Chart overlay: line on top of end-year bars (align exact)
+========================= */
+const AlignLineToEndYearBars = {
+  id: "alignLineToEndYearBars",
+  afterDatasetsDraw(chart, args, opts) {
+    if (!opts?.enabled) return;
+    const idx = opts.targetDatasetIndex;
+    if (idx == null) return;
+
+    const meta = chart.getDatasetMeta(idx);
+    if (!meta || !meta.data || meta.type !== "bar") return;
+
+    const ds = chart.data.datasets[idx];
+    const pts = meta.data
+      .map((el, i) => ({ x: el.x, y: el.y, v: ds.data[i] }))
+      .filter(p => p.v !== null && p.v !== undefined && Number.isFinite(p.v));
+
+    if (pts.length < 2) return;
+
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.strokeStyle = opts.color || "rgba(11,61,145,.92)";
+    ctx.lineWidth = 2.8;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+
+    ctx.fillStyle = opts.color || "rgba(11,61,145,.92)";
+    for (const p of pts) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+};
+Chart.register(AlignLineToEndYearBars);
+
+/* =========================
+   DATA PIPELINE
+========================= */
+const cache = {}; // property -> {meta,daily,monthlyValues,years,asOfMonthByYear}
+
+async function loadProperty(prop){
+  if(cache[prop]) return cache[prop];
+
+  setStatus(`Loading ${prop}...`);
+  const res = await fetch(CSV_URLS[prop], {cache:"no-store"});
+  const text = await res.text();
+  const rows = csvParse(text);
+
+  const a1 = (rows[0] && rows[0][0]) ? String(rows[0][0]).trim() : "";
+  const a2 = (rows[1] && rows[1][0]) ? String(rows[1][0]).trim() : "";
+
+  const headerRow = 2;
+  const hdr = rows[headerRow] || [];
+  const idx = {};
+  for(let i=0;i<hdr.length;i++){
+    idx[String(hdr[i]||"").trim().toLowerCase()] = i;
+  }
+  function colIndexByCandidates(cands){
+    for(const c of cands){
+      const k = c.toLowerCase();
+      if(idx[k] != null) return idx[k];
+    }
+    return null;
+  }
+
+  const iDate  = colIndexByCandidates(["Date"]);
+  const iOcc   = colIndexByCandidates(["Occupied"]);
+  const iOccPct= colIndexByCandidates(["Occupancy"]);
+  const iRev   = colIndexByCandidates(["Room Revenue","RoomRevenue","Revenue"]);
+  const iAdr   = colIndexByCandidates(["ADR"]);
+  const iAvail = colIndexByCandidates(["Rooms Available","Room Avail.","Room Avail","RoomsAvail","Room Available"]);
+
+  const startDate = new Date(PMS_START[prop]+"T00:00:00");
+  const daily = [];
+
+  for(let r=headerRow+1;r<rows.length;r++){
+    const row = rows[r];
+    if(!row || row.length===0) continue;
+    const d = parseDDMMYYYY(row[iDate]);
+    if(!d) continue;
+    if(d < startDate) continue;
+
+    const occ = safeNum(row[iOcc]);
+    const avail = safeNum(row[iAvail]);
+    const rev = safeNum(row[iRev]);
+    const adr = safeNum(row[iAdr]);
+    const occPct = safeNum(row[iOccPct]);
+
+    let csp = null;
+    if(avail != null && avail > 0 && occ != null) csp = occ / avail;
+    else if(occPct != null) csp = occPct;
+
+    daily.push({
+      d,
+      y: d.getFullYear(),
+      m: d.getMonth()+1,
+      occ: (occ!=null? occ: null),
+      avail: (avail!=null? avail: null),
+      rev: (rev!=null? rev: null),
+      adr: (adr!=null? adr: null),
+      csp
+    });
+  }
+
+  const monthly = {};
+  for(const it of daily){
+    monthly[it.y] ??= {};
+    monthly[it.y][it.m] ??= {occSum:0, availSum:0, revSum:0, hasData:false};
+    const b = monthly[it.y][it.m];
+    const hasAny = (it.occ!=null || it.avail!=null || it.rev!=null);
+    if(!hasAny) continue;
+    b.hasData = true;
+    if(it.occ!=null) b.occSum += it.occ;
+    if(it.avail!=null) b.availSum += it.avail;
+    if(it.rev!=null) b.revSum += it.rev;
+  }
+
+  const monthlyValues = {};
+  const years = [];
+  const asOfMonthByYear = {};
+
+  for(const yStr of Object.keys(monthly)){
+    const y = +yStr;
+    years.push(y);
+    monthlyValues[y] = {};
+    let maxM = 0;
+
+    for(let m=1;m<=12;m++){
+      const b = monthly[y][m];
+      if(!b || !b.hasData){
+        monthlyValues[y][m] = {csp:null, adr:null, rev:null, occSum:0, availSum:0};
+        continue;
+      }
+      maxM = Math.max(maxM, m);
+
+      const csp = (b.availSum > 0) ? (b.occSum / b.availSum) : null;
+      const revV = b.revSum;
+      const adrV = (b.occSum > 0 && revV != null) ? (revV / b.occSum) : null;
+
+      monthlyValues[y][m] = {csp, adr: adrV, rev: revV, occSum: b.occSum, availSum: b.availSum};
+    }
+    asOfMonthByYear[y] = maxM || 12;
+  }
+
+  years.sort((a,b)=>a-b);
+  cache[prop] = {meta:{a1,a2,headerRow}, daily, monthlyValues, years, asOfMonthByYear};
+  setStatus(`Loaded ${prop}`);
+  return cache[prop];
+}
+
+async function loadAll(){
+  await Promise.all(Object.keys(CSV_URLS).map(loadProperty));
+}
+function unionAllYears(){
+  const set = new Set();
+  for(const p of Object.keys(CSV_URLS)){
+    (cache[p]?.years || []).forEach(y => set.add(y));
+  }
+  return Array.from(set).sort((a,b)=>a-b);
+}
+
+/* =========================
+   UI INIT
+========================= */
+const elMode     = document.getElementById("mode");
+const elProperty = document.getElementById("property");
+const elMetric   = document.getElementById("metric");
+const elChartType= document.getElementById("chartType");
+const elViewMode = document.getElementById("viewMode");
+const elYears    = document.getElementById("yearsShown");
+const elEndYear  = document.getElementById("endYear");
+const elRefresh  = document.getElementById("refreshBtn");
+const ctlProperty  = document.getElementById("ctlProperty");
+const ctlYearsShown = document.getElementById("ctlYearsShown");
+
+function initPropertyOptions(){
+  elProperty.innerHTML = "";
+  const opts = [
+    ["Hotel","Tahiti Beach Hotel"],
+    ["Resort","Tahiti Resort"],
+    ["Central","Tahiti Central"],
+  ];
+  for(const [v,t] of opts){
+    const o = document.createElement("option");
+    o.value=v; o.textContent=t;
+    elProperty.appendChild(o);
+  }
+  elProperty.value="Hotel";
+}
+function getPropLabel(prop){
+  if(prop==="Hotel") return "Tahiti Beach Hotel";
+  if(prop==="Resort") return "Tahiti Resort";
+  if(prop==="Central") return "Tahiti Central";
+  return prop;
+}
+function buildPageTitle(){
+  const mode = elMode.value;
+
+  // ALL: giữ nguyên
+  if(mode === "ALL"){
+    return "TAHITI GROUP – KẾT QUẢ KINH DOANH QUA CÁC NĂM";
+  }
+
+  // YoY: chỉ hiển thị Property
+  const propName = getPropLabel(elProperty.value).toUpperCase();
+  return `${propName} – KẾT QUẢ KINH DOANH QUA CÁC NĂM`;
+}
+
+
+function applyPageTitle(){
+  const t = buildPageTitle();
+  const h1 = document.getElementById("pageTitle");
+  if(h1) h1.textContent = t;
+  document.title = t; // đổi luôn title tab
+}
+
+function applyModeUI(){
+  const isAll = (elMode.value==="ALL");
+  ctlProperty.style.display = isAll ? "none" : "flex";
+  ctlYearsShown.style.display = isAll ? "none" : "flex";
+}
+
+
+function applySummaryVisibility(){
+  const block = document.getElementById("summaryBlock");
+  if(!block) return;
+  const isAll = (elMode.value === "ALL");
+  block.style.display = isAll ? "none" : "flex";
+}
+
+
+function applyGridLayout(){
+  const grid = document.getElementById("mainGrid");
+  if(!grid) return;
+  const isAll = (elMode.value === "ALL");
+  grid.classList.toggle("single", isAll);
+}
+
+function applyTablesVisibility(){
+  const block = document.getElementById("tablesBlock");
+  if(!block) return;
+  const isAll = (elMode.value === "ALL");
+  block.style.display = isAll ? "none" : "flex";
+}
+function rebuildEndYearOptions(){
+  const years = (elMode.value==="ALL") ? unionAllYears() : (cache[elProperty.value]?.years || []);
+  elEndYear.innerHTML = "";
+  for(const y of years){
+    const o = document.createElement("option");
+    o.value = String(y);
+    o.textContent = String(y);
+    elEndYear.appendChild(o);
+  }
+  if(years.length) elEndYear.value = String(years[years.length-1]);
+}
+
+/* =========================
+   TABLE BUILDERS (FULL DATA ALWAYS)
+========================= */
+function lastYearFromCSV(prop){
+  const d = cache[prop];
+  return (d && d.years.length) ? d.years[d.years.length-1] : null;
+}
+function buildTableHTML(titleLeft, years, lastYear, getCellText, extraRows){
+  const cols = years.slice().sort((a,b)=>a-b);
+
+  let html = `<table><thead><tr><th>${titleLeft}</th>`;
+  for(const y of cols){
+    const cls = (y===lastYear) ? ' class="lastYear"' : "";
+    html += `<th${cls}>${y}</th>`;
+  }
+  html += `</tr></thead><tbody>`;
+
+  for(let m=1;m<=12;m++){
+    html += `<tr><td>${m}</td>`;
+    for(const y of cols){
+      const cls = (y===lastYear) ? ' class="lastYear"' : "";
+      html += `<td${cls}>${getCellText(y,m)}</td>`;
+    }
+    html += `</tr>`;
+  }
+
+  for(const r of extraRows){
+    html += `<tr class="total"><td>${r.label}</td>`;
+    for(const y of cols){
+      const cls = (y===lastYear) ? ' class="lastYear"' : "";
+      html += `<td${cls}>${r.fn(y)}</td>`;
+    }
+    html += `</tr>`;
+  }
+
+  html += `</tbody></table>`;
+  return html;
+}
+
+function renderTables(prop){
+  const d = cache[prop];
+  const years = d.years;
+  const lastYear = lastYearFromCSV(prop);
+
+  document.getElementById("tableCsp").innerHTML = buildTableHTML(
+    "Tháng",
+    years,
+    lastYear,
+    (y,m)=> fmtPct0(d.monthlyValues[y][m].csp),
+    [{
+      label:"BQ cả năm",
+      fn:(y)=>{
+        let occ=0, avail=0, hasAvail=false;
+        for(let m=1;m<=12;m++){
+          const v = d.monthlyValues[y][m];
+          if(v.availSum>0){
+            hasAvail=true;
+            occ += (v.occSum||0);
+            avail += (v.availSum||0);
+          }
+        }
+        if(hasAvail && avail>0) return fmtPct0(occ/avail);
+        return "";
+      }
+    }]
+  );
+
+  document.getElementById("tableAdr").innerHTML = buildTableHTML(
+    "Tháng",
+    years,
+    lastYear,
+    (y,m)=> {
+      const v = d.monthlyValues[y][m].adr;
+      return v==null ? "" : fmtInt(v);
+    },
+    [{
+      label:"BQ cả năm",
+      fn:(y)=>{
+        let rev=0, occ=0, has=false;
+        for(let m=1;m<=12;m++){
+          const v = d.monthlyValues[y][m];
+          if(v.rev!=null && v.occSum>0){
+            rev += v.rev;
+            occ += v.occSum;
+            has=true;
+          }
+        }
+        if(has && occ>0) return fmtInt(rev/occ);
+        return "";
+      }
+    }]
+  );
+
+  document.getElementById("tableRev").innerHTML = buildTableHTML(
+    "Tháng",
+    years,
+    lastYear,
+    (y,m)=> {
+      const v = d.monthlyValues[y][m].rev;
+      return v==null ? "" : fmtInt(v);
+    },
+    [
+      {
+        label:"BQ cả năm",
+        fn:(y)=>{
+          let sum=0, cnt=0;
+          for(let m=1;m<=12;m++){
+            const v = d.monthlyValues[y][m].rev;
+            if(v!=null && Number.isFinite(v)){ sum += v; cnt++; }
+          }
+          return cnt>0 ? fmtInt(sum/cnt) : "";
+        }
+      },
+      {
+        label:"Total revenue",
+        fn:(y)=>{
+          let sum=0, has=false;
+          for(let m=1;m<=12;m++){
+            const v = d.monthlyValues[y][m].rev;
+            if(v!=null && Number.isFinite(v)){ sum += v; has=true; }
+          }
+          return has ? fmtInt(sum) : "";
+        }
+      }
+    ]
+  );
+}
+
+/* =========================
+   SUMMARY
+========================= */
+function computeYTD(prop, endYear, cutoffMonth){
+  const d = cache[prop];
+  let occ=0, avail=0, rev=0;
+  for(let m=1;m<=cutoffMonth;m++){
+    const v = d.monthlyValues[endYear]?.[m];
+    if(!v) continue;
+    if(v.availSum>0){ occ += (v.occSum||0); avail += (v.availSum||0); }
+    if(v.rev!=null) rev += v.rev;
+  }
+  const csp = (avail>0) ? (occ/avail) : null;
+  const adr = (occ>0) ? (rev/occ) : null;
+  return {csp, adr, rev};
+}
+
+function renderSummary(prop, endYear, cutoffMonth){
+  const cur = computeYTD(prop, endYear, cutoffMonth);
+  const prevY = endYear - 1;
+  const prev = cache[prop].years.includes(prevY) ? computeYTD(prop, prevY, cutoffMonth) : {csp:null, adr:null, rev:null};
+
+  document.getElementById("ytdCsp").textContent = fmtPct0Dash(cur.csp);
+  document.getElementById("ytdAdr").textContent = cur.adr==null ? "-" : fmtInt(cur.adr);
+  document.getElementById("ytdRev").textContent = cur.rev==null ? "-" : fmtInt(cur.rev);
+
+  document.getElementById("yoyCsp").textContent = fmtPctYoY(yoy(cur.csp, prev.csp));
+  document.getElementById("yoyAdr").textContent = fmtPctYoY(yoy(cur.adr, prev.adr));
+  document.getElementById("yoyRev").textContent = fmtPctYoY(yoy(cur.rev, prev.rev));
+}
+
+function renderSourceInfo(prop){
+  const d = cache[prop];
+  const exportTime = (d.meta.a2 || "-").trim();
+
+  document.getElementById("sourceInfo").innerHTML =
+    `Nguồn dữ liệu: <b>PMS EzCloud</b><br>` +
+    `<b>Export:</b> <span style="font-weight:900;color:#111827">${exportTime}</span>`;
+}
+
+
+/* =========================
+   CHART
+========================= */
+let chart = null;
+
+function metricTitle(metricKey){
+  if(metricKey==="CSP") return "CSP (Occupancy %)";
+  if(metricKey==="ADR") return "ADR";
+  return "Room Revenue";
+}
+function dataLabelFormatter(metricKey, v){
+  if(v==null) return "";
+  if(metricKey==="CSP") return Math.round(v*100) + "%";
+  if(metricKey==="ADR") return fmtAdrM(v);
+  return fmtShortMoney(v);
+}
+function yearColorFor(year, endYear){
+  const k = endYear - year;               // 0 = endYear, 1 = endYear-1, ...
+  const idx = Math.max(0, Math.min(k, YEAR_PALETTE.length - 1));
+  return YEAR_PALETTE[idx];
+}
+
+function computeYearsRange(availableYears, endYear, yearsShown){
+  const start = endYear - yearsShown + 1;
+  const yrs = [];
+  for(let y=start;y<=endYear;y++){
+    if(availableYears.includes(y)) yrs.push(y);
+  }
+  return yrs;
+}
+function buildYoYSeries(prop, metricKey, yearsRange, viewMode, endYear){
+  const d = cache[prop];
+  const asOfMonth = d.asOfMonthByYear[endYear] || 12;
+  const cutoff = (viewMode==="YTD") ? asOfMonth : 12;
+
+  const labels = MONTH_LABELS.slice();
+  const datasets = [];
+  const chartType = elChartType.value;
+
+  for(const y of yearsRange){
+    const data = [];
+    for(let m=1;m<=12;m++){
+      const v = d.monthlyValues[y]?.[m];
+      let val = null;
+      if(v){
+        if(metricKey==="CSP") val = v.csp;
+        if(metricKey==="ADR") val = v.adr;
+        if(metricKey==="REV") val = v.rev;
+      }
+      if(viewMode==="YTD" && m>cutoff) val = null;
+      data.push(val==null ? null : val);
+    }
+
+    const base = yearColorFor(y, endYear);
+    const isEnd = (y===endYear);
+
+    if(chartType==="bar"){
+      datasets.push({
+        type:"bar",
+        label:String(y),
+        data,
+        backgroundColor: hexToRgba(base, isEnd ? 0.42 : 0.30),
+borderColor:     hexToRgba(base, isEnd ? 0.95 : 0.70),
+borderWidth: isEnd ? 2.2 : 1.6,
+      });
+    } else {
+      datasets.push({
+        type:"line",
+        label:String(y),
+        data,
+        borderColor: hexToRgba(base, isEnd ? 0.95 : 0.70),
+        backgroundColor: hexToRgba(base, 0.14),
+        borderWidth: isEnd ? 3.0 : 2.0,
+        pointRadius: isEnd ? 3.0 : 2.4,
+        pointHoverRadius: 4,
+        tension: 0.35,
+        spanGaps:false
+      });
+    }
+  }
+  return {labels, datasets, cutoffMonth: cutoff};
+}
+
+function buildALLSeries(metricKey, viewMode, endYear){
+  const labels = MONTH_LABELS.slice();
+  const chartType = elChartType.value;
+
+  const asOfHotel   = cache.Hotel?.asOfMonthByYear?.[endYear] || 0;
+  const asOfResort  = cache.Resort?.asOfMonthByYear?.[endYear] || 0;
+  const asOfCentral = cache.Central?.asOfMonthByYear?.[endYear] || 0;
+  const cutoff = (viewMode==="YTD") ? Math.max(asOfHotel, asOfResort, asOfCentral, 12) : 12;
+
+  function seriesForProp(prop){
+    const d = cache[prop];
+    const data = [];
+    for(let m=1;m<=12;m++){
+      const v = d.monthlyValues[endYear]?.[m];
+      let val = null;
+      if(v){
+        if(metricKey==="CSP") val = v.csp;
+        if(metricKey==="ADR") val = v.adr;
+        if(metricKey==="REV") val = v.rev;
+      }
+      if(viewMode==="YTD" && m>cutoff) val = null;
+      data.push(val==null ? null : val);
+    }
+
+    const col = PROPERTY_COLORS[prop];
+    const label = getPropLabel(prop);
+
+    if(chartType==="bar"){
+      return {
+        type:"bar",
+        label,
+        data,
+        backgroundColor: hexToRgba(col, 0.22),
+        borderColor: hexToRgba(col, 0.88),
+        borderWidth: 1.4
+      };
+    }
+    return {
+      type:"line",
+      label,
+      data,
+      borderColor: hexToRgba(col, 0.92),
+      backgroundColor: hexToRgba(col, 0.12),
+      borderWidth: 2.8,
+      pointRadius: 3.0,
+      pointHoverRadius: 4,
+      tension: 0.35,
+      spanGaps:false
+    };
+  }
+
+  const datasets = [seriesForProp("Hotel"), seriesForProp("Resort"), seriesForProp("Central")];
+  return {labels, datasets, cutoffMonth: cutoff};
+}
+
+function buildTitleYoY(prop, metricKey, yearsRange, viewMode, cutoffMonth){
+  const metricName = metricTitle(metricKey);
+  const from = yearsRange[0], to = yearsRange[yearsRange.length-1];
+  const propName = getPropLabel(prop);
+  if(viewMode==="YTD") return `${metricName} – ${propName} – ${from} → ${to} (YTD tới T${cutoffMonth})`;
+  return `${metricName} – ${propName} – ${from} → ${to}`;
+}
+function buildTitleALL(metricKey, endYear, viewMode, cutoffMonth){
+  const metricName = metricTitle(metricKey);
+  if(viewMode==="YTD") return `${metricName} – ALL (Hotel/Resort/Central) – ${endYear} (YTD tới T${cutoffMonth})`;
+  return `${metricName} – ALL (Hotel/Resort/Central) – ${endYear}`;
+}
+
+function renderChart(){
+  const mode = elMode.value;
+  const metricKey = elMetric.value;
+  const chartType = elChartType.value;
+  const viewMode = elViewMode.value;
+  const endYear = parseInt(elEndYear.value,10);
+
+  let labels, datasets, cutoffMonth, title;
+
+  if(mode==="ALL"){
+    ({labels, datasets, cutoffMonth} = buildALLSeries(metricKey, viewMode, endYear));
+    title = buildTitleALL(metricKey, endYear, viewMode, cutoffMonth);
+
+    document.getElementById("asOf").textContent = `As of: ${cutoffMonth}/${endYear}`;
+    renderSummary("Hotel", endYear, cutoffMonth);
+
+    document.getElementById("sourceInfo").innerHTML =
+      `<b>Hotel</b>: ${cache.Hotel.meta.a1} ${cache.Hotel.meta.a2} · StartDate=${PMS_START.Hotel}<br>`+
+      `<b>Resort</b>: ${cache.Resort.meta.a1} ${cache.Resort.meta.a2} · StartDate=${PMS_START.Resort}<br>`+
+      `<b>Central</b>: ${cache.Central.meta.a1} ${cache.Central.meta.a2} · StartDate=${PMS_START.Central}`;
+
+    document.getElementById("chartSubtitle").textContent = "So sánh 3 khu (monthly)";
+  } else {
+    const prop = elProperty.value;
+    const d = cache[prop];
+    const yearsShown = parseInt(elYears.value,10);
+    const yearsRange = computeYearsRange(d.years, endYear, yearsShown);
+
+    ({labels, datasets, cutoffMonth} = buildYoYSeries(prop, metricKey, yearsRange, viewMode, endYear));
+    title = buildTitleYoY(prop, metricKey, yearsRange, viewMode, cutoffMonth);
+
+    document.getElementById("asOf").textContent = `As of: ${cutoffMonth}/${endYear}`;
+    renderSummary(prop, endYear, cutoffMonth);
+    renderSourceInfo(prop);
+    document.getElementById("chartSubtitle").textContent =
+      (chartType==="bar") ? "So sánh theo năm (monthly) + Line End year" : "So sánh theo năm (monthly)";
+  }
+
+  document.getElementById("chartTitle").textContent = title;
+
+  const endYearLabel = String(endYear);
+  let targetBarDatasetIndex = null;
+  if(mode==="YOY" && chartType==="bar"){
+    targetBarDatasetIndex = datasets.findIndex(ds => ds.label === endYearLabel);
+  }
+
+  const ctx = document.getElementById("chart").getContext("2d");
+  if(chart) chart.destroy();
+
+  // datalabel font sizes (Revenue/ADR thường dài)
+  const dlSize = (metricKey==="CSP") ? 12 : 11;
+
+  chart = new Chart(ctx, {
+    type: (chartType==="bar") ? "bar" : "line",
+    data: { labels, datasets },
+    options: {
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{ mode:"index", intersect:false },
+      scales: {
+        x: {
+          stacked:false,
+          grid:{ color:"rgba(229,231,235,.45)" },
+          ticks:{ font:{weight:"700"} }
+        },
+        y: {
+          beginAtZero: (metricKey!=="CSP"),
+          suggestedMin: (metricKey==="CSP") ? 0 : undefined,
+          suggestedMax: (metricKey==="CSP") ? 1 : undefined,
+          grid:{ color:"rgba(229,231,235,.45)" },
+          ticks:{
+            font:{weight:"700"},
+            callback: (val)=> {
+              const v = Number(val);
+              if(!Number.isFinite(v)) return "";
+              if(metricKey==="CSP") return Math.round(v*100) + "%";
+              return fmtShortMoney(v);
+            }
+          }
+        }
+      },
+      plugins:{
+        legend:{
+          position:"bottom",
+          labels:{ boxWidth:18, boxHeight:10, font:{weight:"700"} }
+        },
+        tooltip:{
+          callbacks:{
+            label:(ctx)=>{
+              const v = ctx.raw;
+              if(v==null) return `${ctx.dataset.label}: -`;
+              if(metricKey==="CSP") return `${ctx.dataset.label}: ${Math.round(v*100)}%`;
+              return `${ctx.dataset.label}: ${fmtInt(v)}`;
+            }
+          }
+        },
+        datalabels:{
+          display:(ctx)=>{
+            if(mode==="ALL") return true;
+            return ctx.dataset.label === endYearLabel; // YoY: chỉ show label cho năm cuối để sạch
+          },
+          anchor:(ctx)=> (chartType==="bar" ? "end" : "end"),
+          align:(ctx)=> (chartType==="bar" ? "end" : "top"),
+          offset: 2,
+          clamp:true,
+          color:(ctx)=>{
+            if(mode==="ALL"){
+              const lbl = ctx.dataset.label;
+              if(lbl.includes("Beach")) return PROPERTY_COLORS.Hotel;
+              if(lbl.includes("Resort")) return PROPERTY_COLORS.Resort;
+              if(lbl.includes("Central")) return PROPERTY_COLORS.Central;
+              return "#111827";
+            }
+            return OCEAN;
+          },
+          font:{ weight:"800", size: dlSize },
+          formatter:(v)=> dataLabelFormatter(metricKey, v)
+        },
+        alignLineToEndYearBars: {
+          enabled: (mode==="YOY" && chartType==="bar" && targetBarDatasetIndex !== null && targetBarDatasetIndex>=0),
+          targetDatasetIndex: targetBarDatasetIndex,
+          color: hexToRgba(OCEAN, 0.92)
+        }
+      }
+    }
+  });
+
+  setStatus("OK");
+}
+
+/* =========================
+   EVENTS + BOOT
+========================= */
+function rerenderAll(){
+  applyPageTitle();
+  applyModeUI();
+  applyTablesVisibility();
+  applySummaryVisibility();
+  applyGridLayout();
+  applyGridLayout();
+  rebuildEndYearOptions();
+
+  if(elMode.value !== "ALL"){
+    renderTables(elProperty.value);
+  }
+  renderChart();
+}
+
+elMode.addEventListener("change", rerenderAll);
+
+elProperty.addEventListener("change", ()=>{
+  applyPageTitle();
+  rebuildEndYearOptions();
+  if(elMode.value !== "ALL") renderTables(elProperty.value);
+  renderChart();
+});
+
+elMetric.addEventListener("change", renderChart);
+elChartType.addEventListener("change", renderChart);
+elViewMode.addEventListener("change", renderChart);
+elYears.addEventListener("change", renderChart);
+elEndYear.addEventListener("change", renderChart);
+
+elRefresh.addEventListener("click", async ()=>{
+  for(const k of Object.keys(cache)) delete cache[k];
+  await loadAll();
+  rerenderAll();
+});
+
+(async function boot(){
+  initPropertyOptions();
+  await loadAll();
+  applyModeUI();
+  applyTablesVisibility();
+  applySummaryVisibility();
+  applyGridLayout();
+  rebuildEndYearOptions();
+  applyPageTitle();
+  if(elMode.value !== "ALL") renderTables(elProperty.value);
+  renderChart();
+})();
+
+</script>
+</body>
+</html>
