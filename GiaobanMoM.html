@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8" />
-<title>Giao ban Tahiti – v12m11 (Mobile Optimized)</title>
+<title>Giao ban Tahiti – v12m13 (Label hierarchy + Under/Over label color + Sellable by day)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 <script defer src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <style>
@@ -13,6 +13,10 @@
   --occ:#0a84ff;    /* CSP */
   --adr:#2ca02c;    /* ADR */
   --rev:#0a84ff;    /* Rev bar */
+
+  --under:#D32F2F;  /* Under label đỏ */
+  --over:#FF8C00;   /* Over label cam */
+  --normal:#111;    /* Label normal */
 }
 *{box-sizing:border-box}
 body{
@@ -22,83 +26,37 @@ body{
   color:#111;
   background:#fff;
 }
-h1{
-  margin:0 0 6px 0;
-  font-size:22px;
-  font-weight:800;
-  text-align:center;
-}
-h2{
-  margin:0 0 10px 0;
-  font-size:15px;
-  font-weight:600;
-  text-align:center;
-  color:#333;
-}
+h1{margin:0 0 6px 0;font-size:22px;font-weight:800;text-align:center;}
+h2{margin:0 0 10px 0;font-size:15px;font-weight:600;text-align:center;color:#333;}
 .toolbar,.toolbar2,.toolbar3{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  align-items:center;
-  justify-content:center;
-  margin:8px 0 10px;
+  display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;margin:8px 0 10px;
 }
-.toolbar select,
-.toolbar input[type="text"],
-.toolbar input[type="date"],
-.toolbar2 input[type="text"]{
-  padding:6px 8px;
-  border:1px solid #ccc;
-  border-radius:8px;
-  min-width:220px;
+.toolbar select,.toolbar input[type="text"],.toolbar input[type="date"],.toolbar2 input[type="text"]{
+  padding:6px 8px;border:1px solid #ccc;border-radius:8px;min-width:220px;
 }
 .toolbar button{
-  padding:10px 14px;
-  border:0;
-  border-radius:10px;
-  background:#111;
-  color:#fff;
-  cursor:pointer;
+  padding:10px 14px;border:0;border-radius:10px;background:#111;color:#fff;cursor:pointer;
 }
-#chart{
-  width:100%;
-  height:72vh;
-}
+#chart{width:100%;height:72vh;}
 #status{
-  margin:8px auto;
-  max-width:1200px;
-  font-size:12px;
-  color:#333;
-  background:#f7f7f7;
-  border:1px solid #e5e5e5;
-  border-radius:8px;
-  padding:8px;
-  white-space:pre-wrap;
+  margin:8px auto;max-width:1200px;font-size:12px;color:#333;background:#f7f7f7;
+  border:1px solid #e5e5e5;border-radius:8px;padding:8px;white-space:pre-wrap;
 }
 label{font-size:12px;color:#333}
 .gb-label{color:var(--wed);font-size:11px;font-weight:700;}
 .error{color:#b00020;font-weight:bold}
 
-/* Mobile */
 @media (max-width: 768px){
   body{padding:8px}
   h1{font-size:18px}
   h2{font-size:13px}
   .toolbar{gap:6px}
-  .toolbar select,.toolbar input[type="date"]{
-    min-width:150px;
-    font-size:14px;
-  }
-  .toolbar button{
-    padding:10px 12px;
-    font-size:14px;
-  }
+  .toolbar select,.toolbar input[type="date"]{min-width:150px;font-size:14px;}
+  .toolbar button{padding:10px 12px;font-size:14px;}
   .toolbar2{display:none;}
   .toolbar3 label{font-size:13px}
   #chart{height:70vh}
 }
-
-/* Very small */
 @media (max-width: 480px){
   .toolbar{justify-content:space-between}
   .toolbar > *{flex:1 1 48%}
@@ -106,92 +64,40 @@ label{font-size:12px;color:#333}
   #chart{height:68vh}
 }
 
-/* Preloader */
 #preloader{
-  position:fixed;
-  inset:0;
-  background:#fff;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-weight:700;
-  font-size:18px;
-  z-index:9999;
+  position:fixed;inset:0;background:#fff;display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:18px;z-index:9999;
 }
 .spinner{
-  width:18px;
-  height:18px;
-  border-radius:50%;
-  border:3px solid #ddd;
-  border-top-color:#111;
-  margin-right:10px;
-  animation:spin 0.9s linear infinite;
+  width:18px;height:18px;border-radius:50%;border:3px solid #ddd;border-top-color:#111;
+  margin-right:10px;animation:spin 0.9s linear infinite;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* Monthly summary table */
-.monthly-summary{
-  margin:10px auto 6px;
-  max-width:1200px;
-  overflow-x:auto;
-  -webkit-overflow-scrolling:touch;
-}
-.monthly-summary .ms-title{
-  font-size:13px;
-  font-weight:800;
-  margin:0 0 6px 0;
-  color:#111;
-  text-align:center;
-}
+.monthly-summary{margin:10px auto 6px;max-width:1200px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.monthly-summary .ms-title{font-size:13px;font-weight:800;margin:0 0 6px 0;color:#111;text-align:center;}
 .ms-meta{margin-top:8px;font-size:12px;color:#444;text-align:right;}
 .monthly-summary table{
-  width:100%;
-  border-collapse:separate;
-  border-spacing:0;
-  background:#fff;
-  border:1px solid #e5e5e5;
-  border-radius:10px;
-  overflow:hidden;
+  width:100%;border-collapse:separate;border-spacing:0;background:#fff;border:1px solid #e5e5e5;
+  border-radius:10px;overflow:hidden;
 }
-.monthly-summary th, .monthly-summary td{
-  padding:10px 10px;
-  border-bottom:1px solid #eee;
-  font-size:12px;
-  white-space:nowrap;
-}
-.monthly-summary th{
-  background:#fafafa;
-  font-weight:800;
-  color:#222;
-  text-align:center;
-}
-.monthly-summary td{
-  text-align:right;
-}
-.monthly-summary td:first-child{
-  text-align:left;
-  font-weight:700;
-}
-.monthly-summary tr:last-child td{
-  border-bottom:0;
-}
+.monthly-summary th,.monthly-summary td{padding:10px 10px;border-bottom:1px solid #eee;font-size:12px;white-space:nowrap;}
+.monthly-summary th{background:#fafafa;font-weight:800;color:#222;text-align:center;}
+.monthly-summary td{text-align:right;}
+.monthly-summary td:first-child{text-align:left;font-weight:700;}
+.monthly-summary tr:last-child td{border-bottom:0;}
 .ms-pos{color:#1a7f37;font-weight:800;}
 .ms-neg{color:#b00020;font-weight:800;}
 .ms-na{color:#777;font-weight:700;}
-
-/* Column groups (Monthly table) */
-.ms-g1{background:#F3FAFF;} /* Tháng hiện tại */
-.ms-g2{background:#FFF7ED;} /* Tháng trước + MoM */
-.ms-g3{background:#F5F3FF;} /* Cùng kỳ + YoY */
-
+.ms-g1{background:#F3FAFF;}
+.ms-g2{background:#FFF7ED;}
+.ms-g3{background:#F5F3FF;}
 .ms-delta{font-weight:800;}
-.ms-delta .ms-val{font-weight:700;color:#333;}
-.ms-delta .ms-paren{font-weight:700;color:#333;}
 @media (max-width:768px){
-  .monthly-summary th, .monthly-summary td{font-size:12px;padding:9px 8px;}
+  .monthly-summary th,.monthly-summary td{font-size:12px;padding:9px 8px;}
   .monthly-summary .ms-title{font-size:12px}
 }
-
 </style>
 </head>
 <body>
@@ -237,7 +143,7 @@ label{font-size:12px;color:#333}
 <div id="chart"></div>
 <div id="monthlySummary" class="monthly-summary" style="display:none"></div>
 <div id="status">
-  v12m11: ADR dạng M (2 số thập phân), combo CSP+ADR+REV có trục riêng cho ADR, toggle chữ "Giao ban", Briefing ADR-only vẫn có tuần TB, giữ logic cũ.
+  v12m13: Sellable theo ngày (Rooms Available). Label phân cấp: CSP% bold; Occupied/Available nhỏ + italic (không khoảng trắng). Under&lt;50 = đỏ; Over&gt;100 = cam. Không tô nền Under/Over.
 </div>
 
 <script>
@@ -271,31 +177,22 @@ function splitLines(t){return t.replace(/\r/g,'').split('\n');}
 function parseCSV(text){
   const lines=splitLines(text).filter(l=>l!=null && String(l).trim()!=='');
   if(lines.length===0) return {headers:[],rows:[],meta:{exportTime:null,source:null}};
-
   const norm=s=>String(s||'').toLowerCase().replace(/\s+/g,' ').trim();
   let headerIdx=0;
-
-  // Tìm dòng header thật sự (chứa Date + Occupancy)
   for(let i=0;i<Math.min(lines.length,60);i++){
     const cols=lines[i].split(',').map(s=>s.trim());
     const hasDate = cols.some(c=>norm(c)==='date');
     const hasOcc  = cols.some(c=>norm(c)==='occupancy');
-    if(hasDate && hasOcc){
-      headerIdx=i;
-      break;
-    }
+    if(hasDate && hasOcc){ headerIdx=i; break; }
   }
 
   const metaLines = lines.slice(0,headerIdx).join(' | ');
   const meta = { exportTime:null, source:'PMS EzCloud' };
 
-  // Ưu tiên lấy export time từ phần meta (vd ô A2)
-  // Hỗ trợ: dd/mm/yyyy hh:mm[:ss]  OR  yyyy-mm-dd hh:mm[:ss]
   const dtRegex = /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})\s+(\d{1,2}:\d{2}(?::\d{2})?)/;
   const m = metaLines.match(dtRegex);
   if(m){
     let d=m[1], t=m[2];
-    // normalize date to dd/mm/yyyy when possible
     if(/^\d{4}[\/\-]/.test(d)){
       const parts=d.split(/[\/\-]/).map(x=>parseInt(x,10));
       const yy=parts[0], mm=('0'+parts[1]).slice(-2), dd=('0'+parts[2]).slice(-2);
@@ -350,19 +247,15 @@ function numMoney(v){
   return parseInt(s,10);
 }
 function fmtDDMM(d){
-  const dd=('0'+d.getDate()).slice(-2),
-        mm=('0'+(d.getMonth()+1)).slice(-2);
+  const dd=('0'+d.getDate()).slice(-2), mm=('0'+(d.getMonth()+1)).slice(-2);
   return dd+'/'+mm;
 }
 function fmtDDMMYYYY(d){
-  const dd=('0'+d.getDate()).slice(-2),
-        mm=('0'+(d.getMonth()+1)).slice(-2),
-        yy=d.getFullYear();
+  const dd=('0'+d.getDate()).slice(-2), mm=('0'+(d.getMonth()+1)).slice(-2), yy=d.getFullYear();
   return dd+'/'+mm+'/'+yy;
 }
 function fmtMonthYYYY(d){
-  const mm=('0'+(d.getMonth()+1)).slice(-2),
-        yy=d.getFullYear();
+  const mm=('0'+(d.getMonth()+1)).slice(-2), yy=d.getFullYear();
   return mm+'/'+yy;
 }
 function fmtMil(n){
@@ -378,55 +271,38 @@ function viMoney(n){
   catch(e){return n;}
 }
 
-/* Monthly summary helpers */
+/* Monthly summary helpers (unchanged) */
 function monthKey(y,m){ return y+'-'+('0'+(m+1)).slice(-2); }
 function monthLabel(y,m){ return ('0'+(m+1)).slice(-2)+'/'+y; }
 function monthRange(y,m){
   const start=new Date(y,m,1);
   const end=new Date(y,m+1,0);
-  // set end time to end of day to avoid timezone edge cases
   end.setHours(23,59,59,999);
   return {start,end};
 }
-function prevMonth(y,m){
-  if(m===0) return {y:y-1,m:11};
-  return {y:y,m:m-1};
-}
+function prevMonth(y,m){ return (m===0)?{y:y-1,m:11}:{y:y,m:m-1}; }
 function yoyMonth(y,m){ return {y:y-1,m:m}; }
-
 function calcMonthMetrics(arr,y,m){
   const r=monthRange(y,m);
   const inMonth=arr.filter(o=>o.d>=r.start && o.d<=r.end);
   const occVals=inMonth.map(o=>o.occ).filter(v=>v!=null && isFinite(v));
   const adrVals=inMonth.map(o=>o.adr).filter(v=>v!=null && isFinite(v));
   const revVals=inMonth.map(o=>o.rev).filter(v=>v!=null && isFinite(v));
-
   const avgOcc = occVals.length ? (occVals.reduce((a,b)=>a+b,0)/occVals.length) : null;
   const avgADR = adrVals.length ? (adrVals.reduce((a,b)=>a+b,0)/adrVals.length) : null;
   const sumRev = revVals.length ? (revVals.reduce((a,b)=>a+b,0)) : null;
-
   return {avgOcc, avgADR, sumRev, label: monthLabel(y,m), key: monthKey(y,m)};
 }
 function pctChange(cur,base){
   if(cur==null || base==null) return null;
-  if(!isFinite(cur) || !isFinite(base)) return null;
-  if(base===0) return null;
+  if(!isFinite(cur) || !isFinite(base) || base===0) return null;
   return (cur-base)/base*100;
-}
-function diffPct(cur,base){
-  if(cur==null || base==null) return null;
-  if(!isFinite(cur) || !isFinite(base)) return null;
-  return (cur-base);
 }
 function fmtPct(p){
   if(p==null || !isFinite(p)) return '—';
-  const n=Math.round(p); // luôn làm tròn số nguyên
+  const n=Math.round(p);
   const sign = n>0 ? '+' : (n<0 ? '-' : '');
   return sign + Math.abs(n).toFixed(0) + '%';
-}
-function fmtPctNoDec(p){
-  // Giữ tương thích: CSP dùng hiệu số (%-point), vẫn hiển thị % số nguyên
-  return fmtPct(p);
 }
 function fmtMoneySigned(v){
   if(v==null || !isFinite(v)) return '—';
@@ -444,47 +320,33 @@ function clsPct(p){
   if(p<0) return 'ms-neg';
   return 'ms-na';
 }
-function fmtOcc(v){
-  if(v==null || !isFinite(v)) return '—';
-  return Math.round(v)+'%';
-}
-function fmtMoneyOrNA(v){
-  if(v==null || !isFinite(v)) return '—';
-  return viMoney(Math.round(v));
-}
+function fmtOcc(v){ return (v==null || !isFinite(v)) ? '—' : (Math.round(v)+'%'); }
+function fmtMoneyOrNA(v){ return (v==null || !isFinite(v)) ? '—' : viMoney(Math.round(v)); }
+
 function renderMonthlySummaryTable(win,arr,meta){
   const box=document.getElementById('monthlySummary');
   if(!box) return;
-  if(!win || !win.monthly){
-    box.style.display='none';
-    box.innerHTML='';
-    return;
-  }
+  if(!win || !win.monthly){ box.style.display='none'; box.innerHTML=''; return; }
 
-  // Tháng hiện tại = tháng của win.start (theo tháng đang xem)
   const y=win.start.getFullYear();
   const m=win.start.getMonth();
   const pm=prevMonth(y,m);
-  const py=prevMonth(pm.y,pm.m);
   const yy=yoyMonth(y,m);
 
   const cur=calcMonthMetrics(arr,y,m);
   const prev=calcMonthMetrics(arr,pm.y,pm.m);
   const yoy=calcMonthMetrics(arr,yy.y,yy.m);
 
-  // CSP: chênh lệch điểm % (hiệu số), không dùng tỷ lệ tương đối
   const momOcc = (cur.avgOcc==null||prev.avgOcc==null)?null:(Math.round(cur.avgOcc) - Math.round(prev.avgOcc));
   const yoyOcc = (cur.avgOcc==null||yoy.avgOcc==null)?null:(Math.round(cur.avgOcc) - Math.round(yoy.avgOcc));
 
   const momADR=pctChange(cur.avgADR, prev.avgADR);
   const yoyADR=pctChange(cur.avgADR, yoy.avgADR);
-
   const dAdrMom=(cur.avgADR==null||prev.avgADR==null)?null:(cur.avgADR-prev.avgADR);
   const dAdrYoy=(cur.avgADR==null||yoy.avgADR==null)?null:(cur.avgADR-yoy.avgADR);
 
   const momRev=pctChange(cur.sumRev, prev.sumRev);
   const yoyRev=pctChange(cur.sumRev, yoy.sumRev);
-
   const dRevMom=(cur.sumRev==null||prev.sumRev==null)?null:(cur.sumRev-prev.sumRev);
   const dRevYoy=(cur.sumRev==null||yoy.sumRev==null)?null:(cur.sumRev-yoy.sumRev);
 
@@ -510,9 +372,9 @@ function renderMonthlySummaryTable(win,arr,meta){
           <td>Công suất phòng (CSP)</td>
           <td class="ms-g1">${fmtOcc(cur.avgOcc)}</td>
           <td class="ms-g2">${fmtOcc(prev.avgOcc)}</td>
-          <td class="ms-g2 ${clsPct(momOcc)} ms-delta">${fmtPctNoDec(momOcc)}</td>
+          <td class="ms-g2 ${clsPct(momOcc)} ms-delta">${fmtPct(momOcc)}</td>
           <td class="ms-g3">${fmtOcc(yoy.avgOcc)}</td>
-          <td class="ms-g3 ${clsPct(yoyOcc)} ms-delta">${fmtPctNoDec(yoyOcc)}</td>
+          <td class="ms-g3 ${clsPct(yoyOcc)} ms-delta">${fmtPct(yoyOcc)}</td>
         </tr>
         <tr>
           <td>Bình quân ADR (VND)</td>
@@ -541,7 +403,7 @@ function renderMonthlySummaryTable(win,arr,meta){
 function getKey(headers,target){
   const norm=s=>s.toLowerCase().replace(/\s+/g,' ').trim();
   const want=norm(target);
-  for(const h of headers){if(norm(h)===want)return h;}
+  for(const h of headers){ if(norm(h)===want) return h; }
   return null;
 }
 function lastWednesday(date){
@@ -553,8 +415,6 @@ function lastWednesday(date){
 }
 function makeWindows(viewMode,pickStr){
   const day=24*3600*1000;
-
-  // MONTHLY
   if(viewMode==='MONTHLY' && pickStr){
     const d=parseDate(pickStr); if(!d) return null;
     if(d.getDate()===1){
@@ -565,12 +425,8 @@ function makeWindows(viewMode,pickStr){
       return {start:d,end:end,title:'Monthly view ('+fmtDDMM(d)+' → '+fmtDDMM(end)+')',monthly:true,monthText:fmtMonthYYYY(d)};
     }
   }
-
-  // BRIEFING
   let meeting=pickStr?parseDate(pickStr):lastWednesday(new Date());
   if(!meeting) meeting=lastWednesday(new Date());
-
-  // Rule đặc biệt: chọn ngày 08/mm => tuần cuối kéo đến hết tháng
   const specialEnd = (pickStr && meeting.getDate && meeting.getDate()===8);
   const end = specialEnd
     ? new Date(meeting.getFullYear(), meeting.getMonth()+1, 0)
@@ -585,6 +441,13 @@ function makeWindows(viewMode,pickStr){
     specialEnd
   };
 }
+
+/* Color rule */
+function cspColor(v){
+  if(v < 60)  return '#D32F2F'; // UNDER <60% -> đỏ
+  return '#111';
+}
+
 
 /* Render */
 async function render(){
@@ -618,8 +481,17 @@ async function render(){
     const kOccPct=getKey(headers,'Occupancy');
     const kRev=getKey(headers,'Room Revenue');
     const kADR=getKey(headers,'ADR');
+    const kAvail=getKey(headers,'Rooms Available'); // Sellable theo ngày
+
     if(!kDate||!kOccRooms||!kOccPct){
       throw new Error('Thiếu cột bắt buộc: Date, Occupied, Occupancy.\nHeaders: '+headers.join(' | '));
+    }
+    if(!kAvail){
+      setStatus(
+        'Cảnh báo: không thấy cột "Rooms Available".\n' +
+        'Label sẽ hiển thị Occupied (phòng) nhưng không có mẫu số sellable.\n' +
+        'Headers: '+headers.join(' | ')
+      );
     }
 
     const arr=[];
@@ -627,9 +499,10 @@ async function render(){
       const d=parseDate(r[kDate]); if(!d) continue;
       const occ=numPercent(r[kOccPct]);
       const occRooms=numMoney(r[kOccRooms]);
+      const avail=kAvail?numMoney(r[kAvail]):null;
       const adr=kADR?numMoney(r[kADR]):null;
       const rev=kRev?numMoney(r[kRev]):null;
-      arr.push({d,occ,occRooms,adr,rev});
+      arr.push({d,occ,occRooms,avail,adr,rev});
     }
     if(arr.length===0) throw new Error('Không có dữ liệu hợp lệ.');
     arr.sort((a,b)=>a.d-b.d);
@@ -642,6 +515,7 @@ async function render(){
     const dates=data.map(o=>o.d);
     const occ=data.map(o=>o.occ);
     const rooms=data.map(o=>o.occRooms);
+    const avail=data.map(o=>o.avail);
     const adrVals=data.map(o=>o.adr);
     const revVals=data.map(o=>o.rev);
 
@@ -660,19 +534,14 @@ async function render(){
 
     document.getElementById('titleH2').innerText=win.title;
 
-    /* --- Gán trục cho traces --- */
+    /* --- Traces --- */
 
     // Room Revenue
     if(useREV){
-      let yaxisRev='y'; // mặc định
+      let yaxisRev='y';
       if(triple || (useCSP && useREV && !useADR)) yaxisRev='y2';
-      else if(!useCSP && useADR && useREV) yaxisRev='y'; // REV trái, ADR phải
-      // only REV: y
       traces.push({
-        x:dates,
-        y:revVals,
-        type:'bar',
-        name:'Room Revenue (VND/ngày)',
+        x:dates,y:revVals,type:'bar',name:'Room Revenue (VND/ngày)',
         marker:{color:getComputedStyle(document.documentElement).getPropertyValue('--rev').trim()},
         opacity:0.95,
         text:revVals.map(v=>(v||v===0)?fmtMil(v):''),
@@ -685,53 +554,54 @@ async function render(){
     // ADR
     if(useADR){
       let yaxisADR='y';
-      if(triple) yaxisADR='y3';                            // CSP+ADR+REV: trục riêng
-      else if(useCSP && useADR && !useREV) yaxisADR='y2';  // CSP+ADR
-      else if(!useCSP && useADR && useREV) yaxisADR='y2';  // REV trái, ADR phải
-      // only ADR: y
+      if(triple) yaxisADR='y3';
+      else if(useCSP && useADR && !useREV) yaxisADR='y2';
+      else if(!useCSP && useADR && useREV) yaxisADR='y2';
 
       const textShort=adrVals.map(v=>v!=null?fmtMilADR(v):'');
       const hoverData=adrVals.map((v,i)=>v!=null
         ?('<b>'+fmtDDMM(dates[i])+'</b><br>ADR: '+viMoney(v)+' VND')
         :'');
       traces.push({
-        x:dates,
-        y:adrVals,
-        type:'scatter',
-        mode:'lines+markers+text',
-        name:'ADR (VND)',
+        x:dates,y:adrVals,type:'scatter',mode:'lines+markers+text',name:'ADR (VND)',
         line:{width:2,color:getComputedStyle(document.documentElement).getPropertyValue('--adr').trim()},
         marker:{size:6,color:getComputedStyle(document.documentElement).getPropertyValue('--adr').trim()},
-        text:textShort,
-        textposition:'top center',
-        textfont:{size:10},
-        hovertemplate:'%{customdata}<extra></extra>',
-        customdata:hoverData,
+        text:textShort,textposition:'top center',textfont:{size:10},
+        hovertemplate:'%{customdata}<extra></extra>',customdata:hoverData,
         yaxis:yaxisADR
       });
     }
 
-    // CSP
+    // CSP with hierarchical label (bold % ; small italic rooms with no spaces around "/")
     if(useCSP){
-      const labels=occ.map((v,i)=>v!=null?(v+'%<br>('+(Math.round(rooms[i]||0))+'p)'):'');
+      const labels = occ.map((v,i)=>{
+        if(v==null) return '';
+        const r = Math.round(rooms[i]||0);
+        const a = (avail[i]!=null) ? Math.round(avail[i]||0) : null;
+
+        const line1 = `<b>${v}%</b>`;
+        const line2 = (a!=null && a>0)
+          ? `<span style="font-size:9px;"><i>${r}/${a}</i></span>`
+          : `<span style="font-size:9px;"><i>${r}</i></span>`;
+        return line1 + '<br>' + line2;
+      });
+
       const textpos=occ.map(v=>v>90?'bottom center':'top center');
+      const colors = occ.map(v => cspColor(v));
+
       traces.push({
-        x:dates,
-        y:occ,
-        type:'scatter',
-        mode:'lines+markers+text',
-        name:'Công suất phòng (%)',
+        x:dates,y:occ,type:'scatter',mode:'lines+markers+text',name:'Công suất phòng (%)',
         line:{width:2,color:getComputedStyle(document.documentElement).getPropertyValue('--occ').trim()},
         marker:{size:6,color:getComputedStyle(document.documentElement).getPropertyValue('--occ').trim()},
         text:labels,
         textposition:textpos,
-        textfont:{size:11,family:'Arial'},
+        textfont:{size:12,family:'Arial',color:colors}, // per-point label color
         yaxis:'y'
       });
     }
 
-    /* --- Tiêu đề --- */
-    const hotelTitle=PRESETS[document.getElementById('hotelSelect').value].title;
+    /* --- Title annotations --- */
+    const hotelTitle=PRESETS[sel].title;
     if(viewMode==='BRIEFING'){
       const l1='<span style="font-size:16px;font-weight:800;">'+hotelTitle+'</span>';
       const l2='<span style="font-size:12px;font-weight:600;">Briefing view – từ '+fmtDDMMYYYY(win.start)+' đến '+fmtDDMMYYYY(win.end)+'</span>';
@@ -742,7 +612,7 @@ async function render(){
       annotations.push({x:0,y:1.13,xref:'paper',yref:'paper',xanchor:'left',yanchor:'top',showarrow:false,text:l1+'<br>'+l2});
     }
 
-    /* --- Briefing: nền, Giao ban, TB --- */
+    /* --- Briefing background & lines & weekly averages --- */
     if(viewMode==='BRIEFING'){
       const day=24*3600*1000;
       const meeting=win.meeting;
@@ -763,9 +633,7 @@ async function render(){
         new Date(meeting.getTime()+7*day),
         new Date(meeting.getTime()+14*day)
       ];
-      if(!win.specialEnd){
-        marks.push(new Date(meeting.getTime()+21*day));
-      }
+      if(!win.specialEnd){ marks.push(new Date(meeting.getTime()+21*day)); }
       for(const d of marks){
         shapes.push({
           type:'line',xref:'x',yref:'paper',
@@ -774,18 +642,14 @@ async function render(){
         });
         if(showGBLabel){
           annotations.push({
-            x:d,y:0,xref:'x',yref:'paper',
-            showarrow:false,
-            text:'<span class="gb-label">Giao ban</span>',
-            textangle:-90,yshift:18
+            x:d,y:0,xref:'x',yref:'paper',showarrow:false,
+            text:'<span class="gb-label">Giao ban</span>',textangle:-90,yshift:18
           });
         }
       }
 
-      // Đường TB tuần:
+      // Đường TB tuần (CSP như cũ, ADR-only giữ logic cũ)
       const avgColor=getComputedStyle(document.documentElement).getPropertyValue('--avg').trim();
-      function seg(s){return{s:s,e:new Date(s.getTime()+7*day)};}
-      // TB CSP
       function avgOcc(s,e){
         let sum=0,n=0;
         for(let i=0;i<dates.length;i++){
@@ -793,7 +657,6 @@ async function render(){
         }
         return n?sum/n:null;
       }
-      // TB ADR
       function avgADRVal(s,e){
         let sum=0,n=0;
         for(let i=0;i<dates.length;i++){
@@ -801,7 +664,6 @@ async function render(){
         }
         return n?sum/n:null;
       }
-
       const segs=[
         {s:new Date(meeting.getTime()-7*day), e:meeting},
         {s:meeting, e:new Date(meeting.getTime()+7*day)},
@@ -809,7 +671,7 @@ async function render(){
         {s:new Date(meeting.getTime()+14*day), e:(win.specialEnd?win.end:new Date(meeting.getTime()+21*day))}
       ];
 
-      if(useCSP){ // TB theo CSP như cũ
+      if(useCSP){
         for(const S of segs){
           const a=avgOcc(S.s,S.e);
           if(a==null) continue;
@@ -824,14 +686,12 @@ async function render(){
             arrowwidth:1.6,arrowcolor:avgColor,text:''
           });
           annotations.push({
-            x:xs,y:a,xref:'x',yref:'y',
-            showarrow:false,
+            x:xs,y:a,xref:'x',yref:'y',showarrow:false,
             text:'<span style="color:'+avgColor+';font-weight:800;font-family:Arial Black;">TB: '+Math.round(a)+'%</span>',
             xanchor:'left',yanchor:'bottom',xshift:6
           });
         }
-      } else if(!useCSP && useADR && !useREV){ 
-        // Briefing chỉ ADR: vẽ TB ADR trên trục hiện tại (y)
+      } else if(!useCSP && useADR && !useREV){
         for(const S of segs){
           const a=avgADRVal(S.s,S.e);
           if(a==null) continue;
@@ -846,8 +706,7 @@ async function render(){
             arrowwidth:1.6,arrowcolor:avgColor,text:''
           });
           annotations.push({
-            x:xs,y:a,xref:'x',yref:'y',
-            showarrow:false,
+            x:xs,y:a,xref:'x',yref:'y',showarrow:false,
             text:'<span style="color:'+avgColor+';font-weight:800;font-family:Arial Black;">TB: '+fmtMilADR(a)+'</span>',
             xanchor:'left',yanchor:'bottom',xshift:6
           });
@@ -855,27 +714,28 @@ async function render(){
       }
     }
 
-    /* --- Summary --- */
-    const avgOccAll = occ.filter(v=>v!=null).length
-      ? Math.round(occ.filter(v=>v!=null).reduce((a,b)=>a+b,0)/occ.filter(v=>v!=null).length)
-      : 0;
+    /* --- Summary (Under threshold fixed 50) --- */
+    const occValid = occ.filter(v=>v!=null && isFinite(v));
+    const avgOccAll = occValid.length ? Math.round(occValid.reduce((a,b)=>a+b,0)/occValid.length) : 0;
+
     const avgADRAll = hasAdrData
       ? Math.round(adrVals.filter(v=>v!=null).reduce((a,b)=>a+b,0)/adrVals.filter(v=>v!=null).length)
       : null;
-    const sumRevAll = hasRevData
-      ? revVals.filter(v=>v!=null).reduce((a,b)=>a+b,0)
-      : null;
+
+    const sumRevAll = hasRevData ? revVals.filter(v=>v!=null).reduce((a,b)=>a+b,0) : null;
+
+    const underThreshold = 60; // fixed
 
     const summaryHTML =
       '<span style="color:#111;font-weight:700;">Bình quân CSP: '+(isFinite(avgOccAll)?avgOccAll:0)+'%</span>'
       +' &nbsp; | &nbsp; <span style="color:#2ca02c;font-weight:700;">Bình quân ADR: '+(avgADRAll!=null?viMoney(avgADRAll):'—')+' VND</span>'
-      +' &nbsp; | &nbsp; <span style="color:#0057D9;font-weight:800;">Tổng DT dự kiến: '+(sumRevAll!=null?viMoney(sumRevAll):'—')+' VND</span>';
+      +' &nbsp; | &nbsp; <span style="color:#0057D9;font-weight:800;">Tổng DT dự kiến: '+(sumRevAll!=null?viMoney(sumRevAll):'—')+' VND</span>'
+      +' &nbsp; | &nbsp; <span style="color:'+getComputedStyle(document.documentElement).getPropertyValue('--under').trim()+';font-weight:800;">Màu đỏ là ngày có CSP < '+underThreshold+'%</span>';
 
     const summaryAnnotation={
       x:1,y:1.13,xref:'paper',yref:'paper',
       xanchor:'right',yanchor:'top',
-      text:summaryHTML,
-      showarrow:false,
+      text:summaryHTML,showarrow:false,
       font:{size:13,family:'Arial'},
       bgcolor:'rgba(255,255,255,0.9)',
       borderpad:2
@@ -894,115 +754,38 @@ async function render(){
         showgrid:true,
         gridcolor:'rgba(0,0,0,0.15)'
       },
-      shapes:(viewMode==='MONTHLY')?[]:shapes,
+      shapes:shapes, // no Under/Over highlight shapes
       annotations:annotations,
       showlegend:true,
       legend:{x:1,y:1,xanchor:'right',yanchor:'top',bgcolor:'rgba(255,255,255,0.85)'}
     };
 
-    // y axis titles & y2/y3
     if(triple){
-      layout.yaxis = {
-        title:'Công suất phòng (%)',
-        rangemode:'tozero',
-        showgrid:true,
-        gridcolor:'rgba(0,0,0,0.15)'
-      };
-      layout.yaxis2 = {
-        title:'Room Revenue (VND/ngày)',
-        anchor:'x',
-        overlaying:'y',
-        side:'right',
-        rangemode:'tozero',
-        position:1
-      };
-      layout.yaxis3 = {
-        title:'ADR (VND)',
-        anchor:'x',
-        overlaying:'y',
-        side:'right',
-        rangemode:'tozero',
-        position:0.9
-      };
+      layout.yaxis = {title:'Công suất phòng (%)',rangemode:'tozero',showgrid:true,gridcolor:'rgba(0,0,0,0.15)'};
+      layout.yaxis2 = {title:'Room Revenue (VND/ngày)',anchor:'x',overlaying:'y',side:'right',rangemode:'tozero',position:1};
+      layout.yaxis3 = {title:'ADR (VND)',anchor:'x',overlaying:'y',side:'right',rangemode:'tozero',position:0.9};
     } else if(useCSP && useREV && !useADR){
-      layout.yaxis = {
-        title:'Công suất phòng (%)',
-        rangemode:'tozero',
-        showgrid:true,
-        gridcolor:'rgba(0,0,0,0.15)'
-      };
-      layout.yaxis2 = {
-        title:'Room Revenue (VND/ngày)',
-        anchor:'x',
-        overlaying:'y',
-        side:'right',
-        rangemode:'tozero',
-        position:1
-      };
+      layout.yaxis = {title:'Công suất phòng (%)',rangemode:'tozero',showgrid:true,gridcolor:'rgba(0,0,0,0.15)'};
+      layout.yaxis2 = {title:'Room Revenue (VND/ngày)',anchor:'x',overlaying:'y',side:'right',rangemode:'tozero',position:1};
     } else if(useCSP && useADR && !useREV){
-      layout.yaxis = {
-        title:'Công suất phòng (%)',
-        rangemode:'tozero',
-        showgrid:true,
-        gridcolor:'rgba(0,0,0,0.15)'
-      };
-      layout.yaxis2 = {
-        title:'ADR (VND)',
-        anchor:'x',
-        overlaying:'y',
-        side:'right',
-        rangemode:'tozero',
-        position:1
-      };
+      layout.yaxis = {title:'Công suất phòng (%)',rangemode:'tozero',showgrid:true,gridcolor:'rgba(0,0,0,0.15)'};
+      layout.yaxis2 = {title:'ADR (VND)',anchor:'x',overlaying:'y',side:'right',rangemode:'tozero',position:1};
     } else if(!useCSP && useADR && useREV){
-      layout.yaxis = {
-        title:'Room Revenue (VND/ngày)',
-        rangemode:'tozero',
-        showgrid:true,
-        gridcolor:'rgba(0,0,0,0.15)'
-      };
-      layout.yaxis2 = {
-        title:'ADR (VND)',
-        anchor:'x',
-        overlaying:'y',
-        side:'right',
-        rangemode:'tozero',
-        position:1
-      };
+      layout.yaxis = {title:'Room Revenue (VND/ngày)',rangemode:'tozero',showgrid:true,gridcolor:'rgba(0,0,0,0.15)'};
+      layout.yaxis2 = {title:'ADR (VND)',anchor:'x',overlaying:'y',side:'right',rangemode:'tozero',position:1};
     } else if(!useCSP && useADR && !useREV){
-      layout.yaxis = {
-        title:'ADR (VND)',
-        rangemode:'tozero',
-        showgrid:true,
-        gridcolor:'rgba(0,0,0,0.15)'
-      };
+      layout.yaxis = {title:'ADR (VND)',rangemode:'tozero',showgrid:true,gridcolor:'rgba(0,0,0,0.15)'};
     } else if(!useCSP && useREV && !useADR){
-      layout.yaxis = {
-        title:'Room Revenue (VND/ngày)',
-        rangemode:'tozero',
-        showgrid:true,
-        gridcolor:'rgba(0,0,0,0.15)'
-      };
+      layout.yaxis = {title:'Room Revenue (VND/ngày)',rangemode:'tozero',showgrid:true,gridcolor:'rgba(0,0,0,0.15)'};
     } else if(useCSP && !useMoney){
-      layout.yaxis = {
-        title:'Công suất phòng (%)',
-        rangemode:'tozero',
-        showgrid:true,
-        gridcolor:'rgba(0,0,0,0.15)'
-      };
+      layout.yaxis = {title:'Công suất phòng (%)',rangemode:'tozero',showgrid:true,gridcolor:'rgba(0,0,0,0.15)'};
     } else {
-      layout.yaxis = {
-        title:'',
-        rangemode:'tozero',
-        showgrid:true,
-        gridcolor:'rgba(0,0,0,0.15)'
-      };
+      layout.yaxis = {title:'',rangemode:'tozero',showgrid:true,gridcolor:'rgba(0,0,0,0.15)'};
     }
 
     await Plotly.newPlot('chart',traces,layout,{responsive:true,displaylogo:false});
     _annotationsBackup=annotations.map(a=>Object.assign({},a));
 
-    // Monthly summary table (only in MONTHLY)
     renderMonthlySummaryTable(win,arr, window.__CSV_META__);
 
     const pr=document.getElementById('preloader');
@@ -1011,13 +794,12 @@ async function render(){
     setStatus(
       'CSV OK. '+win.title+
       '\nCSP='+showCSP+' | ADR='+showADR+' | REV='+showREV+
-      '\nADR data: '+hasAdrData+' | Revenue data: '+hasRevData+
-      '\n(Triple: CSP-y, Rev-y2, ADR-y3; Briefing ADR-only có TB ADR).'
+      '\nRooms Available column: '+(kAvail? 'YES':'NO')+
+      '\nLabel color rule: Under<50=RED | Over>100=ORANGE | Normal=BLACK. (No background highlights).'
     );
   }catch(err){
     console.error(err);
     setStatus(err.message,true);
-    // Hide monthly summary on error
     const ms=document.getElementById('monthlySummary'); if(ms){ ms.style.display='none'; ms.innerHTML=''; }
     const pr=document.getElementById('preloader'); if(pr) pr.style.display='none';
   }
@@ -1044,7 +826,6 @@ async function exportPNG(){
   }
 }
 
-/* Mobile tweaks */
 function isMobile(){
   const ua=navigator.userAgent || navigator.vendor || window.opera;
   return (/android/i.test(ua) || /iPad|iPhone|iPod/.test(ua) || (window.innerWidth<=768));
