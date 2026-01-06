@@ -46,7 +46,10 @@ label{font-size:12px;color:#333}
 .gb-label{color:var(--wed);font-size:11px;font-weight:700;}
 .error{color:#b00020;font-weight:bold}
 
+#summaryBar{display:block;}
 @media (max-width: 768px){
+  #summaryBar{font-size:12px}
+
   body{padding:8px}
   h1{font-size:18px}
   h2{font-size:13px}
@@ -105,6 +108,7 @@ label{font-size:12px;color:#333}
 
 <h1 id="titleH1">TAHITI BEACH HOTEL</h1>
 <h2 id="titleH2">Briefing view – Tuần trước, tuần này và 2 tuần kế tiếp</h2>
+<div id="summaryBar" style="max-width:1200px;margin:0 auto 6px;text-align:center;font-size:13px;font-weight:700;line-height:1.35;padding:0 8px;word-break:break-word;"></div>
 
 <div class="toolbar">
   <label>Cơ sở:</label>
@@ -237,7 +241,7 @@ function numPercent(v){
   if(v==null) return null;
   let s=String(v).replace(/[^0-9.-]/g,''), n=parseFloat(s);
   if(isNaN(n)) return null;
-  if(n<=1) n*=100;
+  if(n<1) n*=100;
   return Math.round(n);
 }
 function numMoney(v){
@@ -732,11 +736,34 @@ async function render(){
       +' &nbsp; | &nbsp; <span style="color:#0057D9;font-weight:800;">Tổng DT dự kiến: '+(sumRevAll!=null?viMoney(sumRevAll):'—')+' VND</span>'
       +' &nbsp; | &nbsp; <span style="color:'+getComputedStyle(document.documentElement).getPropertyValue('--under').trim()+';font-weight:800;">Màu đỏ là ngày có CSP < '+underThreshold+'%</span>';
 
+    // Responsive summary (avoid clipping on iPad / small screens)
+    const summaryBarEl = document.getElementById('summaryBar');
+    if(summaryBarEl){
+      if(isMobile()){
+        summaryBarEl.innerHTML =
+          '<span style="color:#111;font-weight:800;">Bình quân CSP: '+(isFinite(avgOccAll)?avgOccAll:0)+'%</span>'
+          +' &nbsp; | &nbsp; <span style="color:#2ca02c;font-weight:800;">ADR: '+(avgADRAll!=null?viMoney(avgADRAll):'—')+' VND</span>'
+          +'<br>'
+          +'<span style="color:#0057D9;font-weight:900;">Tổng DT: '+(sumRevAll!=null?viMoney(sumRevAll):'—')+' VND</span>'
+          +' &nbsp; | &nbsp; <span style="color:'+getComputedStyle(document.documentElement).getPropertyValue('--under').trim()+';font-weight:900;">CSP < '+underThreshold+'% = đỏ</span>';
+      }else{
+        summaryBarEl.innerHTML = summaryHTML;
+      }
+    }
+
+    // Plotly summary annotation: keep, but wrap on mobile
+    const summaryHTML_anno = isMobile()
+      ? ('<span style="color:#111;font-weight:700;">CSP: '+(isFinite(avgOccAll)?avgOccAll:0)+'%</span>'
+        +' &nbsp; | &nbsp; <span style="color:#2ca02c;font-weight:700;">ADR: '+(avgADRAll!=null?viMoney(avgADRAll):'—')+'</span>'
+        +'<br><span style="color:#0057D9;font-weight:800;">DT: '+(sumRevAll!=null?viMoney(sumRevAll):'—')+'</span>'
+        +' &nbsp; | &nbsp; <span style="color:'+getComputedStyle(document.documentElement).getPropertyValue('--under').trim()+';font-weight:800;">CSP < '+underThreshold+'% = đỏ</span>')
+      : summaryHTML;
+
     const summaryAnnotation={
       x:1,y:1.13,xref:'paper',yref:'paper',
       xanchor:'right',yanchor:'top',
-      text:summaryHTML,showarrow:false,
-      font:{size:13,family:'Arial'},
+      text:summaryHTML_anno,showarrow:false,
+      font:{size:(isMobile()?12:13),family:'Arial'},
       bgcolor:'rgba(255,255,255,0.9)',
       borderpad:2
     };
@@ -745,7 +772,7 @@ async function render(){
 
     /* --- Layout & axis titles theo tổ hợp --- */
     const layout={
-      margin:{l:70,r:70,t:90,b:60},
+      margin:{l:70,r:70,t:(isMobile()?105:90),b:60},
       xaxis:{
         tickmode:'array',
         tickvals:dates,
