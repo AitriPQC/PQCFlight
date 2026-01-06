@@ -7,7 +7,7 @@
 <script defer src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <style>
 :root{
-  --avg:#D95F02;    /* Đường TB */
+  --avg:#F28C28;    /* Đường TB */
   --week:#E9F4FF;   /* Nền tuần họp */
   --wed:#FF8C00;    /* Vạch giao ban */
   --occ:#0a84ff;    /* CSP */
@@ -46,10 +46,7 @@ label{font-size:12px;color:#333}
 .gb-label{color:var(--wed);font-size:11px;font-weight:700;}
 .error{color:#b00020;font-weight:bold}
 
-#summaryBar{display:block;}
 @media (max-width: 768px){
-  #summaryBar{font-size:12px}
-
   body{padding:8px}
   h1{font-size:18px}
   h2{font-size:13px}
@@ -108,7 +105,6 @@ label{font-size:12px;color:#333}
 
 <h1 id="titleH1">TAHITI BEACH HOTEL</h1>
 <h2 id="titleH2">Briefing view – Tuần trước, tuần này và 2 tuần kế tiếp</h2>
-<div id="summaryBar" style="max-width:1200px;margin:0 auto 6px;text-align:center;font-size:13px;font-weight:700;line-height:1.35;padding:0 8px;word-break:break-word;"></div>
 
 <div class="toolbar">
   <label>Cơ sở:</label>
@@ -125,7 +121,7 @@ label{font-size:12px;color:#333}
     <option value="MONTHLY">Monthly view</option>
   </select>
 
-  <label>Mục ngày chọn:</label>
+  <label>Chọn ngày:</label>
   <input id="meetingDate" type="date" />
 
   <button id="renderBtn">Vẽ lại</button>
@@ -535,6 +531,14 @@ async function render(){
     const traces=[];
     const shapes=[];
     const annotations=[];
+    // --- Threshold & Monthly AVG (used for TB line color and legend) ---
+    const underThreshold = 60; // fixed
+    const occValid = occ.filter(v=>v!=null && isFinite(v));
+    const avgOccAll = occValid.length ? Math.round(occValid.reduce((a,b)=>a+b,0)/occValid.length) : 0;
+    const avgColor = (avgOccAll < underThreshold)
+      ? '#111'
+      : getComputedStyle(document.documentElement).getPropertyValue('--avg').trim();
+
 
     document.getElementById('titleH2').innerText=win.title;
 
@@ -653,8 +657,7 @@ async function render(){
       }
 
       // Đường TB tuần (CSP như cũ, ADR-only giữ logic cũ)
-      const avgColor=getComputedStyle(document.documentElement).getPropertyValue('--avg').trim();
-      function avgOcc(s,e){
+function avgOcc(s,e){
         let sum=0,n=0;
         for(let i=0;i<dates.length;i++){
           if(dates[i]>=s && dates[i]<=e && occ[i]!=null){sum+=occ[i];n++;}
@@ -718,40 +721,17 @@ async function render(){
       }
     }
 
-    /* --- Summary (Under threshold fixed 50) --- */
-    const occValid = occ.filter(v=>v!=null && isFinite(v));
-    const avgOccAll = occValid.length ? Math.round(occValid.reduce((a,b)=>a+b,0)/occValid.length) : 0;
-
-    const avgADRAll = hasAdrData
+        /* --- Summary --- */
+const avgADRAll = hasAdrData
       ? Math.round(adrVals.filter(v=>v!=null).reduce((a,b)=>a+b,0)/adrVals.filter(v=>v!=null).length)
       : null;
 
     const sumRevAll = hasRevData ? revVals.filter(v=>v!=null).reduce((a,b)=>a+b,0) : null;
-
-    const underThreshold = 60; // fixed
-
     const summaryHTML =
       '<span style="color:#111;font-weight:700;">Bình quân CSP: '+(isFinite(avgOccAll)?avgOccAll:0)+'%</span>'
       +' &nbsp; | &nbsp; <span style="color:#2ca02c;font-weight:700;">Bình quân ADR: '+(avgADRAll!=null?viMoney(avgADRAll):'—')+' VND</span>'
       +' &nbsp; | &nbsp; <span style="color:#0057D9;font-weight:800;">Tổng DT dự kiến: '+(sumRevAll!=null?viMoney(sumRevAll):'—')+' VND</span>'
-      +' &nbsp; | &nbsp; <span style="color:'+getComputedStyle(document.documentElement).getPropertyValue('--under').trim()+';font-weight:800;">Màu đỏ là ngày có CSP < '+underThreshold+'%</span>';
-
-    // Responsive summary (avoid clipping on iPad / small screens)
-    const summaryBarEl = document.getElementById('summaryBar');
-    if(summaryBarEl){
-      if(isMobile()){
-        summaryBarEl.innerHTML =
-          '<span style="color:#111;font-weight:800;">Bình quân CSP: '+(isFinite(avgOccAll)?avgOccAll:0)+'%</span>'
-          +' &nbsp; | &nbsp; <span style="color:#2ca02c;font-weight:800;">ADR: '+(avgADRAll!=null?viMoney(avgADRAll):'—')+' VND</span>'
-          +'<br>'
-          +'<span style="color:#0057D9;font-weight:900;">Tổng DT: '+(sumRevAll!=null?viMoney(sumRevAll):'—')+' VND</span>'
-          +' &nbsp; | &nbsp; <span style="color:'+getComputedStyle(document.documentElement).getPropertyValue('--under').trim()+';font-weight:900;">CSP < '+underThreshold+'% = đỏ</span>';
-      }else{
-        summaryBarEl.innerHTML = summaryHTML;
-      }
-    }
-
-    // Plotly summary annotation: keep, but wrap on mobile
+      +' &nbsp; | &nbsp; <span style="color:'+getComputedStyle(document.documentElement).getPropertyValue('--under').trim()+';font-weight:800;">Màu đỏ: CSP < '+underThreshold+'%</span>';
     const summaryHTML_anno = isMobile()
       ? ('<span style="color:#111;font-weight:700;">CSP: '+(isFinite(avgOccAll)?avgOccAll:0)+'%</span>'
         +' &nbsp; | &nbsp; <span style="color:#2ca02c;font-weight:700;">ADR: '+(avgADRAll!=null?viMoney(avgADRAll):'—')+'</span>'
