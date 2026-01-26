@@ -247,7 +247,7 @@
           <span class="subtle" id="chartSubtitle">So sánh theo năm (monthly)</span>
         </h2>
         <canvas id="chart"></canvas>
-        <div class="rule">Notes: Khu Hotel & Resort áp dụng Phần mềm EzCloud từ T5/2022. Khu Central từ T2/2023.</div>
+        <div class="rule">Notes: Dữ liệu khu Khu Hotel & Resort thống kê từ T5/2022. Dữ liệu Khu Central thống kê từ T2/2023.</div>
       </div>
 
       <div class="card summary" id="summaryBlock">
@@ -270,21 +270,24 @@
     </div>
 
     <div class="tables" id="tablesBlock">
-      <div class="card">
-        <div class="sectionTitle">1) Công suất phòng (CSP)</div>
-        <div id="tableCsp"></div>
-      </div>
+  <!-- 3) Revenue – đưa lên đầu -->
+  <div class="card">
+    <div class="sectionTitle">3) Doanh thu phòng (Revenue)</div>
+    <div id="tableRev"></div>
+  </div>
 
-      <div class="card">
-        <div class="sectionTitle">2) Giá bình quân (ADR)</div>
-        <div id="tableAdr"></div>
-      </div>
+  <!-- 1) CSP -->
+  <div class="card">
+    <div class="sectionTitle">1) Công suất phòng (CSP)</div>
+    <div id="tableCsp"></div>
+  </div>
 
-      <div class="card">
-        <div class="sectionTitle">3) Doanh thu phòng (Revenue)</div>
-        <div id="tableRev"></div>
-      </div>
-    </div>
+  <!-- 2) ADR -->
+  <div class="card">
+    <div class="sectionTitle">2) Giá bình quân (ADR)</div>
+    <div id="tableAdr"></div>
+  </div>
+</div>
   </div>
 
 <script>
