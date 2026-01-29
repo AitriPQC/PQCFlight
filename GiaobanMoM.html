@@ -28,8 +28,25 @@ body{
 }
 h1{margin:0 0 6px 0;font-size:22px;font-weight:800;text-align:center;}
 h2{margin:0 0 10px 0;font-size:15px;font-weight:600;text-align:center;color:#333;}
-.toolbar,.toolbar2,.toolbar3{
+.toolbar,.toolbar3{
   display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;margin:8px 0 10px;
+}
+.toolbar2{
+  display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  margin:8px auto 10px;max-width:1200px;padding:0 6px;
+}
+.toolbar2-left{
+  display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:flex-start;
+}
+.toolbar2-right{
+  display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end;
+}
+.toolbar2-right label{white-space:nowrap;}
+.toolbar2-right input[type="text"]{width:auto;}
+@media (max-width:900px){
+  .toolbar2{justify-content:center;}
+  .toolbar2-right{justify-content:center;}
+  .toolbar2-right input[type="text"]{min-width:220px;width:100%;}
 }
 .toolbar select,.toolbar input[type="text"],.toolbar input[type="date"],.toolbar2 input[type="text"]{
   padding:6px 8px;border:1px solid #ccc;border-radius:8px;min-width:220px;
@@ -98,6 +115,19 @@ label{font-size:12px;color:#333}
   .monthly-summary th,.monthly-summary td{font-size:12px;padding:9px 8px;}
   .monthly-summary .ms-title{font-size:12px}
 }
+.datasource-input{
+  width: 280px;
+  max-width: 280px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width:900px){
+  .datasource-input{
+    width: 220px;
+    max-width: 220px;
+  }
+}
 </style>
 </head>
 <body>
@@ -129,15 +159,16 @@ label{font-size:12px;color:#333}
 </div>
 
 <div class="toolbar2">
-  <label>Google Sheets CSV (tùy chỉnh):</label>
-  <input id="csvUrl" type="text" placeholder="(Tuỳ chọn) Dán link CSV khác nếu muốn…">
-</div>
-
-<div class="toolbar3">
-  <label><input id="toggleCSP" type="checkbox" checked> Hiển thị CSP</label>
+  <div class="toolbar2-left">
+    <label><input id="toggleCSP" type="checkbox" checked> Hiển thị CSP</label>
   <label><input id="toggleADR" type="checkbox"> Hiển thị ADR</label>
   <label><input id="toggleREV" type="checkbox"> Hiển thị Room Revenue</label>
   <label><input id="toggleGBLabel" type="checkbox" checked> Hiển thị chữ "Giao ban"</label>
+  </div>
+  <div class="toolbar2-right">
+    <label>Data source:</label>
+  <input id="csvUrl" type="text" placeholder="(Tuỳ chọn) Dán link CSV khác nếu muốn…" class="datasource-input">
+  </div>
 </div>
 
 <div id="monthlySummary" class="monthly-summary" style="display:none"></div>
