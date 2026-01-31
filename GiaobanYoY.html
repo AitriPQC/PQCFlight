@@ -247,7 +247,10 @@
           <span class="subtle" id="chartSubtitle">So sánh theo năm (monthly)</span>
         </h2>
         <canvas id="chart"></canvas>
-        <div class="rule">Notes: dữ liệu khu Hotel & Resort thống kê từ T5/2022, khu Central từ T2/2023.</div>
+        <div class="rule" id="allDataLine" style="display:none; font-weight:600; color:#555; margin-bottom:6px;">Nguồn dữ liệu: PMS EzCloud · Export: —</div>
+       <!--
+        <div class="rule">Notes: dữ liệu thông kê khu Hotel & Resort có từ T5/2022, khu Central từ T2/2023.</div>
+        -->
       </div>
 
       <div class="card summary" id="summaryBlock">
@@ -1007,6 +1010,29 @@ function buildTitleALL(metricKey, endYear, viewMode, cutoffMonth){
   return `${metricName} – ALL (Hotel/Resort/Central) – ${endYear}`;
 }
 
+
+function parseExportDT(s){
+  if(!s) return null;
+  const m = String(s).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if(!m) return null;
+  const dd=parseInt(m[1],10), mm=parseInt(m[2],10)-1, yyyy=parseInt(m[3],10);
+  const hh=parseInt(m[4],10), mi=parseInt(m[5],10), ss=parseInt(m[6]||"0",10);
+  return new Date(yyyy,mm,dd,hh,mi,ss);
+}
+function pickLatestExport(){
+  const items = [
+    {name:"Hotel", s: cache.Hotel?.meta?.a2 || ""},
+    {name:"Resort", s: cache.Resort?.meta?.a2 || ""},
+    {name:"Central", s: cache.Central?.meta?.a2 || ""},
+  ];
+  let best = null;
+  for(const it of items){
+    const dt = parseExportDT(it.s);
+    if(dt && (!best || dt>best.dt)) best = {dt, name:it.name, s:it.s};
+  }
+  return best || {name:"Hotel", s: items[0].s};
+}
+
 function renderChart(){
   const mode = elMode.value;
   const metricKey = elMetric.value;
@@ -1029,7 +1055,19 @@ function renderChart(){
       `<b>Central</b>: ${cache.Central.meta.a1} ${cache.Central.meta.a2} · StartDate=${PMS_START.Central}`;
 
     document.getElementById("chartSubtitle").textContent = "So sánh 3 khu (monthly)";
+    const latest = pickLatestExport();
+    const exportText = (latest && latest.s) ? latest.s : "—";
+    const line = document.getElementById("allDataLine");
+    if(line){
+      line.style.display = "block";
+      line.textContent = `Nguồn dữ liệu: PMS EzCloud · Export: ${exportText}`;
+    }
+
   } else {
+    // hide ALL data line in non-ALL modes
+    const line = document.getElementById("allDataLine");
+    if(line) line.style.display = "none";
+
     const prop = elProperty.value;
     const d = cache[prop];
     const yearsShown = parseInt(elYears.value,10);
