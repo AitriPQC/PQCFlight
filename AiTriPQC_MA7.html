@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AiTriPQC – Leading Indicator (MA7)</title>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root{--bg:#ffffff;--fg:#0b0b0c;--muted:#6b7280;--line:#e5e7eb;--card:#ffffff;--shadow:0 10px 25px rgba(0,0,0,.06);--radius:18px;}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:#f6f7fb; color:var(--fg)}
+    .wrap{max-width:1100px;margin:18px auto;padding:14px}
+    .topbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    .brand{display:flex;gap:10px;align-items:center}
+    .dot{width:12px;height:12px;border-radius:999px;background:#111827}
+    h1{font-size:16px;margin:0;font-weight:800;letter-spacing:.2px}
+    .sub{font-size:12px;color:var(--muted)}
+
+    .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .control{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;box-shadow:var(--shadow);display:flex;gap:10px;align-items:center}
+    .control label{font-size:12px;color:var(--muted)}
+    .control input{border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px;min-width:280px}
+    .control input[type="date"]{min-width:160px}
+    .btn{border:0;border-radius:12px;padding:10px 12px;background:#111827;color:#fff;font-weight:700;cursor:pointer}
+    .btn:active{transform:translateY(1px)}
+
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px;margin-top:12px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px}
+    .card h2{font-size:12px;margin:0 0 6px 0;color:var(--muted);font-weight:700}
+    .big{font-size:24px;font-weight:900;line-height:1.1}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .pill{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:6px 10px;background:#fff}
+    .pill.good{border-color:#16a34a;color:#166534;background:#f0fdf4}
+    .pill.bad{border-color:#dc2626;color:#7f1d1d;background:#fef2f2}
+    .pill.neutral{border-color:#0f172a;color:#0f172a;background:#f8fafc}
+
+    .span4{grid-column:span 4}
+    .span6{grid-column:span 6}
+    .span12{grid-column:span 12}
+
+    .chartBox{height:360px}
+
+    table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden}
+    th,td{font-size:12px;padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+    th{position:sticky;top:0;background:#fafafa;z-index:1}
+    tr:hover td{background:#fafafa}
+
+    .note{margin-top:10px;font-size:12px;color:var(--muted)}
+
+    @media (max-width:900px){
+      .span4,.span6{grid-column:span 12}
+      .control input{min-width:200px}
+      .chartBox{height:320px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="dot"></div>
+        <div>
+          <h1>AiTriPQC – Leading Indicator (MA7)</h1>
+          <div class="sub">Tổng arrivals theo ngày + MA7 + tín hiệu</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="control">
+          <label>CSV (Google Sheet public)</label>
+          <input id="sheetUrl" type="text" />
+        </div>
+        <div class="control">
+          <label>Chọn ngày</label>
+          <input id="datePick" type="date" />
+        </div>
+        <button class="btn" id="reloadBtn">Tải dữ liệu</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card span4">
+        <h2>Tổng arrivals (ngày chọn)</h2>
+        <div class="big" id="kpiTotal">–</div>
+        <div class="row" style="margin-top:10px">
+          <span class="pill" id="kpiDomestic">Domestic: –</span>
+          <span class="pill" id="kpiInternational">International: –</span>
+          <span class="pill" id="kpiCharter">Charter: –</span>
+        </div>
+      </div>
+
+      <div class="card span4">
+        <h2>MA7 (tổng arrivals)</h2>
+        <div class="big" id="kpiMA7">–</div>
+        <div class="row" style="margin-top:10px">
+          <span class="pill neutral" id="kpiDelta">Δ: –</span>
+        </div>
+      </div>
+
+      <div class="card span4">
+        <h2>Tín hiệu leading indicator</h2>
+        <div class="big" id="kpiSignal">–</div>
+        <div class="row" style="margin-top:10px">
+          <span class="pill" id="kpiExplain">–</span>
+        </div>
+      </div>
+
+      <div class="card span12">
+        <h2>Timeline: Total arrivals & MA7</h2>
+        <div class="chartBox"><canvas id="chart"></canvas></div>
+        <div class="note">Quy tắc tín hiệu: Total > MA7 → Tăng; Total < MA7 → Giảm; ±5% quanh MA7 → Đi ngang.</div>
+      </div>
+
+      <div class="card span12">
+        <h2>Danh sách chuyến (ngày chọn)</h2>
+        <div style="overflow:auto;max-height:420px;border-radius:16px;border:1px solid var(--line)">
+          <table>
+            <thead>
+              <tr>
+                <th>TIME</th>
+                <th>AIRLINE</th>
+                <th>FROM</th>
+                <th>QUỐC GIA</th>
+                <th>Domestic</th>
+                <th>International</th>
+                <th>Charter</th>
+                <th>Flight No</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ====== Defaults ======
+  const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSCxWcOum9YRkT2GVTri0K13drPhagUXCJd93mWGIiZvoXnn9gvvMv-o-KLu3bvFZGYSsegG4p7DKPs/pub?gid=0&single=true&output=csv';
+
+  const $ = (id) => document.getElementById(id);
+  const sheetUrlEl = $('sheetUrl');
+  const datePickEl = $('datePick');
+
+  sheetUrlEl.value = localStorage.getItem('AiTriPQC_sheetUrl') || DEFAULT_SHEET_URL;
+
+  // Date default: hôm nay (theo máy)
+  const today = new Date();
+  const pad2 = (n)=> String(n).padStart(2,'0');
+  const toYMD = (d)=> `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+  datePickEl.value = localStorage.getItem('AiTriPQC_date') || toYMD(today);
+
+  // ====== Helpers ======
+  function normHeader(h){
+    return String(h||'').trim().toLowerCase();
+  }
+
+  function safeX(v){
+    return String(v||'').trim().toUpperCase() === 'X' ? 'X' : '';
+  }
+
+  function titleCase(s){
+    return String(s||'').trim().toLowerCase().replace(/\b([a-z])/g, (m,p1)=>p1.toUpperCase());
+  }
+
+  function normalizeCity(s){
+    // theo rule của anh: "Ho Chi Minh" không ghi "Ho Chi Minh City"
+    const t = titleCase(s);
+    if (t === 'Ho Chi Minh City' || t === 'Ho Chi Minh') return 'Ho Chi Minh';
+    return t;
+  }
+
+  function normalizeAirline(s){
+    // Title Case + các rule đã chốt
+    const t = titleCase(s);
+    if (t.toLowerCase() === 'vasco') return 'Vasco';
+    if (t.toLowerCase() === 'thai vietjet') return 'Thai Vietjet Air';
+    if (t.toLowerCase() === 'vietjet') return 'Vietjet Air';
+    return t;
+  }
+
+  function normalizeCountry(s){
+    // Nếu sheet đã có format emoji | Country thì giữ nguyên. Nếu không thì giữ nguyên text.
+    return String(s||'').trim();
+  }
+
+  function normalizeDate(s){
+    // kỳ vọng yyyy-mm-dd; nếu khác thì cố parse
+    const v = String(s||'').trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+    // thử parse dạng dd/mm/yyyy hoặc mm/dd/yyyy (best-effort)
+    const m = v.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+    if (m){
+      let a = parseInt(m[1],10), b = parseInt(m[2],10), y = parseInt(m[3],10);
+      if (y < 100) y += 2000;
+      // ưu tiên dd/mm
+      const dd = a, mm = b;
+      return `${y}-${pad2(mm)}-${pad2(dd)}`;
+    }
+    return v;
+  }
+
+  function normalizeTime(s){
+    // giữ HH:MM
+    const v = String(s||'').trim();
+    const m = v.match(/(\d{1,2}):(\d{2})/);
+    if (!m) return v;
+    return `${pad2(parseInt(m[1],10))}:${m[2]}`;
+  }
+
+  function movingAverage(values, window){
+    const out = [];
+    for (let i=0;i<values.length;i++){
+      const start = Math.max(0, i-window+1);
+      const slice = values.slice(start, i+1);
+      const avg = slice.reduce((a,b)=>a+b,0) / slice.length;
+      out.push(avg);
+    }
+    return out;
+  }
+
+  // ====== State ======
+  let rows = [];          // normalized rows
+  let daily = [];         // [{date,total,domestic,international,charter}]
+  let chart = null;
+
+  async function loadCsv(url){
+    return new Promise((resolve,reject)=>{
+      Papa.parse(url, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: (res)=> resolve(res.data || []),
+        error: (err)=> reject(err)
+      });
+    });
+  }
+
+  function mapRow(raw){
+    // Map by common headers in your sheet
+    // Expected columns (case-insensitive): Date, Airline, City/From, Country, Time, Domestic, International, Charter, Flight No
+    const obj = {};
+    for (const k of Object.keys(raw||{})) obj[normHeader(k)] = raw[k];
+
+    const date = normalizeDate(obj['date'] || obj['ngày'] || obj['day'] || obj['ngay'] || obj['ngày bay'] || obj['date (local)']);
+    const time = normalizeTime(obj['time'] || obj['giờ'] || obj['gio'] || obj['eta'] || obj['arrival time']);
+
+    const airline = normalizeAirline(obj['hãng bay'] || obj['airline'] || obj['carrier'] || obj['hang bay']);
+    const from = normalizeCity(obj['thành phố'] || obj['from'] || obj['bay từ'] || obj['city'] || obj['origin']);
+    const country = normalizeCountry(obj['quốc gia'] || obj['country'] || obj['nation']);
+
+    const domestic = safeX(obj['domestic']);
+    const international = safeX(obj['international']);
+    const charter = safeX(obj['charter']);
+
+    const flightNo = String(obj['flight no.'] || obj['flight no'] || obj['flight'] || obj['số hiệu'] || obj['so hieu'] || obj['mã chuyến'] || '').trim();
+
+    // Rule: loại FROM = Phu Quoc
+    if (from && from.toLowerCase() === 'phu quoc') return null;
+
+    return { date, time, airline, from, country, domestic, international, charter, flightNo };
+  }
+
+  function buildDailyAgg(){
+    const map = new Map();
+    for (const r of rows){
+      if (!r || !r.date) continue;
+      if (!map.has(r.date)) map.set(r.date, {date:r.date,total:0,domestic:0,international:0,charter:0});
+      const d = map.get(r.date);
+      d.total += 1;
+      if (r.domestic==='X') d.domestic += 1;
+      if (r.international==='X') d.international += 1;
+      if (r.charter==='X') d.charter += 1;
+    }
+    daily = Array.from(map.values()).sort((a,b)=>a.date.localeCompare(b.date));
+  }
+
+  function renderKpis(selectedDate){
+    const d = daily.find(x=>x.date===selectedDate);
+    const idx = daily.findIndex(x=>x.date===selectedDate);
+
+    const total = d ? d.total : 0;
+    const dom = d ? d.domestic : 0;
+    const intl = d ? d.international : 0;
+    const ch = d ? d.charter : 0;
+
+    $('kpiTotal').textContent = total || '–';
+    $('kpiDomestic').textContent = `Domestic: ${dom}`;
+    $('kpiInternational').textContent = `International: ${intl}`;
+    $('kpiCharter').textContent = `Charter: ${ch}`;
+
+    // MA7
+    const totals = daily.map(x=>x.total);
+    const ma7 = movingAverage(totals, 7);
+    const ma = idx>=0 ? ma7[idx] : NaN;
+
+    $('kpiMA7').textContent = Number.isFinite(ma) ? ma.toFixed(1) : '–';
+
+    const delta = Number.isFinite(ma) ? (total - ma) : NaN;
+    const deltaEl = $('kpiDelta');
+    if (!Number.isFinite(delta)){
+      deltaEl.textContent = 'Δ: –';
+      deltaEl.className = 'pill neutral';
+    } else {
+      const sign = delta>=0 ? '+' : '';
+      deltaEl.textContent = `Δ: ${sign}${delta.toFixed(1)}`;
+      deltaEl.className = 'pill ' + (delta>0 ? 'good' : (delta<0 ? 'bad' : 'neutral'));
+    }
+
+    // Signal
+    const sigEl = $('kpiSignal');
+    const expEl = $('kpiExplain');
+
+    if (!Number.isFinite(ma) || ma===0){
+      sigEl.textContent = '–';
+      expEl.textContent = 'Chưa đủ dữ liệu để tính MA7.';
+      expEl.className = 'pill neutral';
+      return;
+    }
+
+    const ratio = total / ma;
+    if (ratio > 1.05){
+      sigEl.textContent = 'TĂNG';
+      expEl.textContent = `Total cao hơn MA7 ${( (ratio-1)*100 ).toFixed(0)}% → demand tăng.`;
+      expEl.className = 'pill good';
+    } else if (ratio < 0.95){
+      sigEl.textContent = 'GIẢM';
+      expEl.textContent = `Total thấp hơn MA7 ${( (1-ratio)*100 ).toFixed(0)}% → demand giảm.`;
+      expEl.className = 'pill bad';
+    } else {
+      sigEl.textContent = 'ĐI NGANG';
+      expEl.textContent = 'Total đang quanh MA7 (±5%).';
+      expEl.className = 'pill neutral';
+    }
+  }
+
+  function renderTable(selectedDate){
+    const tbody = $('tbody');
+    tbody.innerHTML = '';
+
+    const list = rows
+      .filter(r=>r && r.date===selectedDate)
+      .sort((a,b)=> (a.time||'').localeCompare(b.time||''));
+
+    const esc = (s)=> String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+
+    for (const r of list){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${esc(r.time)}</td>
+        <td>${esc(r.airline)}</td>
+        <td>${esc(r.from)}</td>
+        <td>${esc(r.country)}</td>
+        <td>${esc(r.domestic||'')}</td>
+        <td>${esc(r.international||'')}</td>
+        <td>${esc(r.charter||'')}</td>
+        <td>${esc(r.flightNo)}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    if (list.length===0){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td colspan="8" style="color:var(--muted)">Không có dữ liệu cho ngày ${selectedDate}.</td>`;
+      tbody.appendChild(tr);
+    }
+  }
+
+  function renderChart(selectedDate){
+    const labels = daily.map(x=>x.date);
+    const totals = daily.map(x=>x.total);
+    const ma7 = movingAverage(totals, 7);
+
+    const idx = labels.indexOf(selectedDate);
+
+    const ctx = $('chart');
+    if (chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Total arrivals',
+            data: totals,
+            tension: 0.2,
+            pointRadius: (c)=> c.dataIndex===idx ? 5 : 2,
+            borderWidth: 2,
+          },
+          {
+            label: 'MA7',
+            data: ma7,
+            tension: 0.25,
+            pointRadius: 0,
+            borderWidth: 2,
+            borderDash: [6,6],
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: {
+            callbacks: {
+              label: (ctx)=> {
+                const v = ctx.parsed.y;
+                return `${ctx.dataset.label}: ${Number.isFinite(v)?v.toFixed(1):v}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } },
+          y: { beginAtZero: true, ticks: { precision: 0 } }
+        }
+      }
+    });
+  }
+
+  async function refresh(){
+    const url = sheetUrlEl.value.trim();
+    if (!url){
+      alert('Thiếu link CSV Google Sheet.');
+      return;
+    }
+
+    localStorage.setItem('AiTriPQC_sheetUrl', url);
+
+    try{
+      $('reloadBtn').textContent = 'Đang tải...';
+      $('reloadBtn').disabled = true;
+
+      const raw = await loadCsv(url);
+      const mapped = raw.map(mapRow).filter(Boolean);
+
+      // Minimal fallback normalization for missing Domestic/International:
+      // Nếu không có cờ, vẫn giữ row để tính total.
+      rows = mapped.map(r=>({
+        ...r,
+        airline: normalizeAirline(r.airline),
+        from: normalizeCity(r.from),
+        domestic: r.domestic||'',
+        international: r.international||'',
+        charter: r.charter||'',
+      }));
+
+      buildDailyAgg();
+
+      // If selected date not in data, pick last date
+      let selected = datePickEl.value;
+      if (!daily.find(x=>x.date===selected) && daily.length){
+        selected = daily[daily.length-1].date;
+        datePickEl.value = selected;
+      }
+
+      localStorage.setItem('AiTriPQC_date', selected);
+
+      renderKpis(selected);
+      renderChart(selected);
+      renderTable(selected);
+
+    } catch(err){
+      console.error(err);
+      alert('Lỗi tải dữ liệu CSV. Kiểm tra link public CSV hoặc mạng.');
+    } finally {
+      $('reloadBtn').textContent = 'Tải dữ liệu';
+      $('reloadBtn').disabled = false;
+    }
+  }
+
+  // Events
+  $('reloadBtn').addEventListener('click', refresh);
+  datePickEl.addEventListener('change', ()=>{
+    const selected = datePickEl.value;
+    localStorage.setItem('AiTriPQC_date', selected);
+    renderKpis(selected);
+    renderChart(selected);
+    renderTable(selected);
+  });
+
+  // Init
+  refresh();
+</script>
+</body>
+</html>
