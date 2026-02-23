@@ -415,14 +415,29 @@ Chart.defaults.color = "#111827";
    HELPERS
 ========================= */
 function setStatus(msg){ document.getElementById("status").textContent = msg; }
-function parseDDMMYYYY(s){
+function parseDateAny(s){
   if(!s) return null;
-  const m = String(s).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if(!m) return null;
-  const dd = +m[1], mm = +m[2], yy = +m[3];
-  const d = new Date(yy, mm-1, dd);
-  if(d.getFullYear()!==yy || d.getMonth()!==mm-1 || d.getDate()!==dd) return null;
-  return d;
+  const t = String(s).trim();
+
+  // DD/MM/YYYY
+  let m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m){
+    const dd = +m[1], mm = +m[2], yy = +m[3];
+    const d = new Date(yy, mm-1, dd);
+    if(d.getFullYear()!==yy || d.getMonth()!==mm-1 || d.getDate()!==dd) return null;
+    return d;
+  }
+
+  // YYYY-MM-DD
+  m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if(m){
+    const yy = +m[1], mm = +m[2], dd = +m[3];
+    const d = new Date(yy, mm-1, dd);
+    if(d.getFullYear()!==yy || d.getMonth()!==mm-1 || d.getDate()!==dd) return null;
+    return d;
+  }
+
+  return null;
 }
 function safeNum(x){
   if(x==null) return null;
@@ -562,7 +577,29 @@ async function loadProperty(prop){
   const a1 = (rows[0] && rows[0][0]) ? String(rows[0][0]).trim() : "";
   const a2 = (rows[1] && rows[1][0]) ? String(rows[1][0]).trim() : "";
 
-  const headerRow = 2;
+    // Auto-detect header row (works whether CSV has 0, 1, or 2 meta rows)
+  function isHeaderRow(row){
+    if(!row || !row.length) return false;
+    const set = new Set(row.map(x => String(x||"").trim().toLowerCase()));
+    // require Date + at least 2 of these
+    const hasDate = set.has("date");
+    let score = 0;
+    if(set.has("occupied")) score++;
+    if(set.has("occupancy")) score++;
+    if(set.has("room revenue") || set.has("roomrevenue") || set.has("revenue")) score++;
+    if(set.has("adr")) score++;
+    if(set.has("rooms available") || set.has("room avail.") || set.has("room avail") || set.has("roomsavail") || set.has("room available")) score++;
+    return hasDate && score >= 2;
+  }
+
+  let headerRow = -1;
+  for(let r=0; r<Math.min(rows.length, 20); r++){
+    if(isHeaderRow(rows[r])) { headerRow = r; break; }
+  }
+  if(headerRow === -1){
+    throw new Error(`Cannot find header row for ${prop}. Expected columns like Date, Occupied, Occupancy, ADR...`);
+  }
+
   const hdr = rows[headerRow] || [];
   const idx = {};
   for(let i=0;i<hdr.length;i++){
@@ -589,7 +626,7 @@ async function loadProperty(prop){
   for(let r=headerRow+1;r<rows.length;r++){
     const row = rows[r];
     if(!row || row.length===0) continue;
-    const d = parseDDMMYYYY(row[iDate]);
+        const d = parseDateAny(row[iDate]);
     if(!d) continue;
     if(d < startDate) continue;
 
