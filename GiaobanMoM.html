@@ -205,13 +205,32 @@ function setStatus(msg,isError){
   el.innerHTML=(isError?'<span class="error">LỖI: </span>':'')+msg;
 }
 function splitLines(t){return t.replace(/\r/g,'').split('\n');}
-function parseCSV(text){
+function csvSplit(line){
+  const out=[];
+  let cur='', inQ=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch === '"'){
+      // handle escaped quote ""
+      if(inQ && line[i+1] === '"'){ cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if(ch === ',' && !inQ){
+      out.push(cur);
+      cur='';
+    } else {
+      cur += ch;
+    }
+  }
+  out.push(cur);
+  return out;
+}
+  function parseCSV(text){
   const lines=splitLines(text).filter(l=>l!=null && String(l).trim()!=='');
   if(lines.length===0) return {headers:[],rows:[],meta:{exportTime:null,source:null}};
   const norm=s=>String(s||'').toLowerCase().replace(/\s+/g,' ').trim();
   let headerIdx=0;
   for(let i=0;i<Math.min(lines.length,60);i++){
-    const cols=lines[i].split(',').map(s=>s.trim());
+   const cols=csvSplit(lines[i]).map(s=>s.trim());
     const hasDate = cols.some(c=>norm(c)==='date');
     const hasOcc  = cols.some(c=>norm(c)==='occupancy');
     if(hasDate && hasOcc){ headerIdx=i; break; }
@@ -242,7 +261,7 @@ function parseCSV(text){
   const headers=lines[headerIdx].split(',').map(s=>s.trim());
   const rows=[];
   for(let i=headerIdx+1;i<lines.length;i++){
-    const cols=lines[i].split(',');
+   const cols=csvSplit(lines[i]);
     const row={};
     for(let j=0;j<headers.length;j++){
       row[headers[j]]=(cols[j]||'').trim();
