@@ -205,26 +205,13 @@ function setStatus(msg,isError){
   el.innerHTML=(isError?'<span class="error">LỖI: </span>':'')+msg;
 }
 
-function csvSplit(line){
-  const out=[];
-  let cur='', inQ=false;
-  for(let i=0;i<line.length;i++){
-    const ch=line[i];
-    if(ch === '"'){
-      // handle escaped quote ""
-      if(inQ && line[i+1] === '"'){ cur += '"'; i++; }
-      else inQ = !inQ;
-    } else if(ch === ',' && !inQ){
-      out.push(cur);
-      cur='';
-    } else {
-      cur += ch;
-    }
-  }
-  out.push(cur);
-  return out;
-}
-  function csvParse(text){
+/**
+ * Robust CSV parser for Google Sheets output=csv
+ * - Handles commas inside quotes
+ * - Handles escaped quotes ("")
+ * - Handles newlines inside quoted fields
+ */
+function csvParse(text){
   const rows = [];
   let cur = [];
   let val = "";
@@ -254,50 +241,55 @@ function csvSplit(line){
 function parseCSV(text){
   const raw = csvParse(text);
 
-  // remove empty rows
+  // Trim + drop empty rows
   const rows2 = raw
     .map(r => r.map(x => (x==null?"":String(x)).trim()))
     .filter(r => r.some(x => x !== ""));
 
-  if(rows2.length === 0) return {headers:[],rows:[],meta:{exportTime:null,source:null}};
+  if(rows2.length === 0){
+    return {headers:[],rows:[],meta:{exportTime:null,source:null}};
+  }
 
   const norm = s => String(s||"").toLowerCase().replace(/\s+/g," ").trim();
 
-  // auto-detect header row
-  let headerIdx = 0;
+  // Auto-detect header row (works with 0/1/2 meta rows)
+  let headerIdx = -1;
   for(let i=0;i<Math.min(rows2.length,80);i++){
     const cols = rows2[i];
-    const hasDate = cols.some(c => norm(c) === "date");
-    const hasOcc  = cols.some(c => norm(c) === "occupancy");
-    if(hasDate && hasOcc){ headerIdx = i; break; }
+    const set = new Set(cols.map(norm));
+    if(set.has("date") && (set.has("occupancy") || set.has("occupied"))){
+      headerIdx = i;
+      break;
+    }
+  }
+  if(headerIdx === -1){
+    // Fallback: assume first row is header
+    headerIdx = 0;
   }
 
-  // meta lines (before header)
+  // Meta (before header)
   const meta = { exportTime:null, source:'PMS EzCloud' };
   const metaText = rows2.slice(0,headerIdx).map(r => r.join(" ")).join(" | ");
-
   const dtRegex = /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})\s+(\d{1,2}:\d{2}(?::\d{2})?)/;
-  const m = metaText.match(dtRegex);
-  if(m){
-    let d=m[1], t=m[2];
+  const mt = metaText.match(dtRegex);
+  if(mt){
+    let d=mt[1], t=mt[2];
+    // normalize date to DD/MM/YYYY for display only
     if(/^\d{4}[\/\-]/.test(d)){
       const parts=d.split(/[\/\-]/).map(x=>parseInt(x,10));
       const yy=parts[0], mm=('0'+parts[1]).slice(-2), dd=('0'+parts[2]).slice(-2);
       d=`${dd}/${mm}/${yy}`;
     }else{
       const parts=d.split(/[\/\-]/).map(x=>parseInt(x,10));
-      if(parts.length===3){
-        const dd=('0'+parts[0]).slice(-2), mm=('0'+parts[1]).slice(-2);
-        let yy=parts[2]; if(yy<100) yy+=2000;
-        d=`${dd}/${mm}/${yy}`;
-      }
+      const dd=('0'+parts[0]).slice(-2), mm=('0'+parts[1]).slice(-2);
+      let yy=parts[2]; if(yy<100) yy+=2000;
+      d=`${dd}/${mm}/${yy}`;
     }
     meta.exportTime = `${d} ${t}`;
   }
 
   const headers = rows2[headerIdx].map(x => String(x||"").trim());
   const outRows = [];
-
   for(let i=headerIdx+1;i<rows2.length;i++){
     const cols = rows2[i];
     const row = {};
@@ -306,44 +298,9 @@ function parseCSV(text){
     }
     outRows.push(row);
   }
-
-  return { headers, rows: outRows, meta };
+  return {headers,rows:outRows,meta};
 }
 
-  const metaLines = lines.slice(0,headerIdx).join(' | ');
-  const meta = { exportTime:null, source:'PMS EzCloud' };
-
-  const dtRegex = /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})\s+(\d{1,2}:\d{2}(?::\d{2})?)/;
-  const m = metaLines.match(dtRegex);
-  if(m){
-    let d=m[1], t=m[2];
-    if(/^\d{4}[\/\-]/.test(d)){
-      const parts=d.split(/[\/\-]/).map(x=>parseInt(x,10));
-      const yy=parts[0], mm=('0'+parts[1]).slice(-2), dd=('0'+parts[2]).slice(-2);
-      d=`${dd}/${mm}/${yy}`;
-    }else{
-      const parts=d.split(/[\/\-]/).map(x=>parseInt(x,10));
-      if(parts.length===3){
-        const dd=('0'+parts[0]).slice(-2), mm=('0'+parts[1]).slice(-2);
-        let yy=parts[2]; if(yy<100) yy+=2000;
-        d=`${dd}/${mm}/${yy}`;
-      }
-    }
-    meta.exportTime = `${d} ${t}`;
-  }
-
-  const headers=lines[headerIdx].split(',').map(s=>s.trim());
-  const rows=[];
-  for(let i=headerIdx+1;i<lines.length;i++){
-   const cols=csvSplit(lines[i]);
-    const row={};
-    for(let j=0;j<headers.length;j++){
-      row[headers[j]]=(cols[j]||'').trim();
-    }
-    rows.push(row);
-  }
-  return {headers,rows,meta};
-}
 function parseDate(s){
   if(!s) return null;
   if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)){
