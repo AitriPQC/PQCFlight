@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
- <title>TAHITI GROUP – KẾT QUẢ KINH DOANH QUA CÁC NĂM</title>
+ <title>TAHITI GROUP –  KẾT QUẢ KINH DOANH QUA CÁC NĂM</title>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
@@ -96,8 +96,7 @@
       gap:10px;
     }
     .subtle{font-size:13px;color:var(--muted);font-weight:650}
-    .rule{margin-top:10px;font-size:13px;color:#b45309;font-weight:750}
-
+    
     .summary{display:flex;flex-direction:column;gap:10px}
     .summary .asof{font-size:13px;color:var(--muted);font-weight:700;text-align:right}
     .sumBox{
@@ -161,8 +160,8 @@
       font-weight:900;       /* BQ cả năm + Total revenue bold */
     }
     th.lastYear, td.lastYear{
-      color:var(--ocean);
-      font-weight:900;  /* lastYear column bold */
+      color:var(--ocean) !important;
+      font-weight:900 !important;  /* lastYear column bold */
     }
 
     canvas{width:100% !important; height:460px !important;}
@@ -177,24 +176,55 @@
     }
 
 
-    /* Alert: early warning */
-    .alert{ color:#dc2626 !important; font-weight:900; }
-    .sectionHeader{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 10px 0;}
-    .unitRight{font-size:12px;color:var(--muted);font-weight:800;white-space:nowrap;}
+/* === YoY Heatmap tables (years rows, months cols) === */
+.heatmapTable{width:100%;border-collapse:separate;border-spacing:0;}
+.heatmapTable th,.heatmapTable td{border:1px solid #e5e7eb;padding:10px 8px;text-align:center;font-variant-numeric:tabular-nums;}
+.heatmapTable thead th{background:#f9fafb;font-weight:800;}
+.heatmapTable th.left{background:#f9fafb;text-align:left;padding-left:12px;}
+.heatmapTable td.left{background:#fff;font-weight:900;text-align:left;padding-left:12px;}
+.heatmapTable td.pill{border-radius:14px;}
+.heatmapTable td.curGood{color:#16a34a;font-weight:900;text-decoration:underline;}
+.heatmapTable td.curBad{color:#dc2626;font-weight:900;text-decoration:underline;}
+.heatmapNote{margin-top:10px;font-size:11px;line-height:1.4;}
 
-    .ruleBox{margin-top:12px;border:1px dashed var(--line);border-radius:14px;padding:12px;background:#fff;}
-    .ruleTitle{font-weight:950;margin-bottom:8px;}
-    .ruleList{margin:0 0 10px 18px;color:var(--muted);font-size:12px;}
-    .ruleGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;color:var(--fg);}
-    .ruleNote{margin-top:10px;font-size:12px;color:var(--muted);font-weight:700;}
-    @media (max-width: 980px){ .ruleGrid{grid-template-columns:1fr;} }
 
-    /* RuleBox compact */
-    .ruleBox{padding:10px !important;border-radius:12px !important;margin-top:10px !important;}
-    .ruleTitle{font-size:13px !important;margin-bottom:6px !important;}
-    .ruleList{font-size:11px !important;margin:0 0 8px 16px !important;}
-    .ruleGrid{font-size:11px !important;gap:6px !important;}
-    .ruleNote{font-size:11px !important;margin-top:8px !important;}
+  .cardHeader{display:flex;align-items:baseline;justify-content:space-between;gap:12px;}
+  .cardUnit{font-size:12px;color:#6b7280;white-space:nowrap;}
+
+/* === UI polish: BQ columns + spacing (2026-02-22) === */
+.card{ margin-top:20px; }
+
+/* Softer pill borders */
+.pill{
+  border:1px solid rgba(0,0,0,0.05) !important;
+}
+
+/* Visually separate BQ block (last 2 columns) */
+.heatmapTable th:nth-last-child(2),
+.heatmapTable td:nth-last-child(2){
+  border-left:2px solid #d1d5db !important;
+}
+
+/* Make BQ year stand out a bit more */
+.heatmapTable th:last-child,
+.heatmapTable td:last-child{
+  font-weight:800;
+  color:#111827;
+}
+
+/* Slight background emphasis for BQ columns */
+.heatmapTable th:nth-last-child(-n+2),
+.heatmapTable td:nth-last-child(-n+2){
+  background:#f3f4f6 !important;
+}
+
+/* Keep season header colors for month columns in CSP heatmap */
+.heatmapTable thead tr:nth-child(1) th:nth-child(n+2):nth-child(-n+13),
+.heatmapTable thead tr:nth-child(2) th:nth-child(n+2):nth-child(-n+13),
+.heatmapTable thead tr:nth-child(3) th:nth-child(n+2):nth-child(-n+13){
+  /* no-op: preserve inline background colors */
+}
+
 </style>
 </head>
 
@@ -266,16 +296,12 @@
           <span class="subtle" id="chartSubtitle">So sánh theo năm (monthly)</span>
         </h2>
         <canvas id="chart"></canvas>
-        <div class="rule" id="allDataLine" style="display:none; font-weight:600; color:#555; margin-bottom:6px;">Nguồn dữ liệu: PMS EzCloud · Export: —</div>
-       <!--
-        <div class="rule">Notes: dữ liệu thông kê khu Hotel & Resort có từ T5/2022, khu Central từ T2/2023.</div>
-        -->
       </div>
 
       <div class="card summary" id="summaryBlock">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
           <div style="font-size:18px;font-weight:950">Summary (YTD + YoY)</div>
-          <div class="asof" id="asOf">As of: -</div>
+          <div class="asof" id="asOf">Tính đến: -</div>
         </div>
 
         <div class="sumBox">
@@ -287,46 +313,28 @@
           <div class="sumRow"><div class="sumKey">YoY Revenue</div><div class="sumVal" id="yoyRev">-</div></div>
         </div>
 
-
-        <div class="ruleBox">
-          <div class="ruleTitle">Quy tắc cảnh báo CSP (màu đỏ)</div>
-          <ul class="ruleList">
-            <li><b>So cùng kỳ:</b> CSP tháng hiện tại &lt; CSP cùng tháng năm trước <b>-10 điểm %</b> → đỏ.</li>
-            <li><b>Ngưỡng mùa vụ theo tháng:</b></li>
-          </ul>
-          <div class="ruleGrid">
-            <div><b>Peak</b> (T1, T2, T12): &lt; <b>90%</b></div>
-            <div><b>Winter High</b> (T11, T3): &lt; <b>80%</b></div>
-            <div><b>Summer High</b> (T6, T7): &lt; <b>80%</b></div>
-            <div><b>Low</b> (T8, T9): &lt; <b>60%</b></div>
-            <div><b>Shoulder</b> (T4, T10): &lt; <b>70%</b></div>
-          </div>
-          <div class="ruleNote">Chỉ áp dụng tô đỏ cho <b>cột năm hiện tại</b> để cảnh báo sớm.</div>
-        </div>
-
-        <div class="foot" id="sourceInfo" style="display:flex;justify-content:space-between;gap:12px;"><div><b>Nguồn dữ liệu:</b> PMS EzCloud</div><div><b>Export:</b> <span id="exportTime">-</span></div></div>
+        <div class="foot" id="sourceInfo">Nguồn dữ liệu: PMS EzCloud -</div>
       </div>
     </div>
 
     <div class="tables" id="tablesBlock">
-  <!-- 3) Revenue – đưa lên đầu -->
-  <div class="card">
-    <div class="sectionHeader"><div class="sectionTitle">1) Doanh thu phòng (Revenue)</div><div class="unitRight">Đơn vị: 1,000 VND</div></div>
-    <div id="tableRev"></div>
-  </div>
+      <div class="card">
+        <div class="sectionTitle">1) Công suất phòng (CSP)</div>
+        <div id="tableCsp"></div>
+      </div>
 
-  <!-- 1) CSP -->
-  <div class="card">
-    <div class="sectionHeader"><div class="sectionTitle">2) Công suất phòng (CSP)</div><div class="unitRight">Đơn vị: %</div></div>
-    <div id="tableCsp"></div>
-  </div>
+      <div class="card">
+        <div class="sectionTitle">2) Doanh thu phòng (Revenue)</div>
+        <div id="tableRev"></div>
+      </div>
 
-  <!-- 2) ADR -->
-  <div class="card">
-    <div class="sectionHeader"><div class="sectionTitle">3) Giá bình quân (ADR)</div><div class="unitRight">Đơn vị: VND</div></div>
-    <div id="tableAdr"></div>
-  </div>
-</div>
+<div class="card">
+        <div class="sectionTitle">3) Giá bình quân (ADR)</div>
+        <div id="tableAdr"></div>
+      </div>
+
+      
+    </div>
   </div>
 
 <script>
@@ -346,7 +354,25 @@ const PMS_START = {
 };
 
 const MONTH_LABELS = ["T1","T2","T3","T4","T5","T6","T7","T8","T9","T10","T11","T12"];
-const CURRENT_MONTH = (new Date()).getMonth() + 1; // 1..12
+
+const NOW = new Date();
+const AS_OF_MONTH = NOW.getMonth() + 1;
+const AS_OF_YEAR = NOW.getFullYear();
+
+const seasonByMonth = {
+  1:{name:'Peak', min:0.90, bg:'#dbeafe'},
+  2:{name:'Peak', min:0.90, bg:'#dbeafe'},
+  3:{name:'Winter High', min:0.80, bg:'#ede9fe'},
+  4:{name:'Shoulder', min:0.70, bg:'#fef3c7'},
+  5:{name:'Summer High', min:0.80, bg:'#dcfce7'},
+  6:{name:'Summer High', min:0.80, bg:'#dcfce7'},
+  7:{name:'Summer High', min:0.80, bg:'#dcfce7'},
+  8:{name:'Low', min:0.60, bg:'#fee2e2'},
+  9:{name:'Low', min:0.60, bg:'#fee2e2'},
+  10:{name:'Shoulder', min:0.70, bg:'#fef3c7'},
+  11:{name:'Winter High', min:0.80, bg:'#ede9fe'},
+  12:{name:'Peak', min:0.90, bg:'#dbeafe'},
+};
 
 
 /* ========= Style: print-friendly ========= */
@@ -413,14 +439,18 @@ function fmtInt(n){
   if(n==null || !Number.isFinite(n)) return "-";
   return Math.round(n).toLocaleString("vi-VN");
 }
-// Revenue display in thousand VND (1,000 VND)
-function fmtIntK(n){
-  if(n==null || !Number.isFinite(n)) return "";
-  return Math.round(n/1000).toLocaleString("vi-VN");
+
+function fmtMillion0(v){
+  if(v==null || !Number.isFinite(v)) return "";
+  return Math.round(v/1e6).toLocaleString('vi-VN');
 }
-function wrapAlert(text, isAlert){
-  if(!text) return "";
-  return isAlert ? `<span class="alert">${text}</span>` : text;
+function fmtMillion1(v){
+  if(v==null || !Number.isFinite(v)) return "";
+  return (v/1e6).toLocaleString('vi-VN',{minimumFractionDigits:1,maximumFractionDigits:1});
+}
+function fmtMillion2(v){
+  if(v==null || !Number.isFinite(v)) return "";
+  return (v/1e6).toLocaleString('vi-VN',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 function fmtPct0(p){
   if(p==null || !Number.isFinite(p)) return "";
@@ -429,33 +459,6 @@ function fmtPct0(p){
 function fmtPct0Dash(p){
   if(p==null || !Number.isFinite(p)) return "-";
   return `${Math.round(p*100)}%`;
-}
-
-// --- CSP Alert rules (Phu Quoc seasonality + YoY) ---
-function cspSeasonThreshold(month){
-  // threshold as decimal
-  if([1,2,12].includes(month)) return 0.90; // Peak season
-  if([11,3].includes(month)) return 0.80;   // Winter High Season
-  if([6,7].includes(month)) return 0.80;    // Summer High Season
-  if([8,9].includes(month)) return 0.60;    // Low Season
-  if([4,10].includes(month)) return 0.70;   // Shoulder Season
-  return 0.70;
-}
-function shouldAlertCSP(month, curCsp, prevCsp){
-  if(curCsp==null || !Number.isFinite(curCsp)) return false;
-  const seasonalBad = curCsp < cspSeasonThreshold(month);
-  const yoyBad = (prevCsp!=null && Number.isFinite(prevCsp) && (curCsp < (prevCsp - 0.10)));
-  return seasonalBad || yoyBad;
-}
-
-function getCspAlertFlags(prop, year){
-  const flags = [];
-  for(let m=1;m<=12;m++){
-    const cur = cache?.[prop]?.monthlyValues?.[year]?.[m]?.csp;
-    const prev = cache?.[prop]?.monthlyValues?.[year-1]?.[m]?.csp;
-    flags.push(shouldAlertCSP(m, cur, prev));
-  }
-  return flags;
 }
 function fmtPctYoY(p){
   if(p==null || !Number.isFinite(p)) return "-";
@@ -812,14 +815,7 @@ function renderTables(prop){
     "Tháng",
     years,
     lastYear,
-    (y,m)=> {
-      const v = d.monthlyValues[y][m].csp;
-      const txt = fmtPct0(v);
-      const prev = d.monthlyValues?.[y-1]?.[m]?.csp;
-      const isCurrentYear = (y===lastYear);
-      const alert = isCurrentYear ? shouldAlertCSP(m, v, prev) : false;
-      return wrapAlert(txt, alert);
-    },
+    (y,m)=> fmtPct0(d.monthlyValues[y][m].csp),
     [{
       label:"BQ cả năm",
       fn:(y)=>{
@@ -870,7 +866,7 @@ function renderTables(prop){
     lastYear,
     (y,m)=> {
       const v = d.monthlyValues[y][m].rev;
-      return v==null ? "" : fmtIntK(v);
+      return v==null ? "" : fmtInt(v);
     },
     [
       {
@@ -881,7 +877,7 @@ function renderTables(prop){
             const v = d.monthlyValues[y][m].rev;
             if(v!=null && Number.isFinite(v)){ sum += v; cnt++; }
           }
-          return cnt>0 ? fmtIntK(sum/cnt) : "";
+          return cnt>0 ? fmtInt(sum/cnt) : "";
         }
       },
       {
@@ -892,11 +888,263 @@ function renderTables(prop){
             const v = d.monthlyValues[y][m].rev;
             if(v!=null && Number.isFinite(v)){ sum += v; has=true; }
           }
-          return has ? fmtIntK(sum) : "";
+          return has ? fmtInt(sum) : "";
         }
       }
     ]
   );
+}
+
+
+/* =========================
+   YoY HEATMAPS (years rows, months cols)
+========================= */
+function yearsFromEnd(d, endYear, n){
+  const ys = d.years.slice().sort((a,b)=>a-b);
+  const maxY = endYear || ys[ys.length-1];
+  return ys.filter(y=>y<=maxY).slice(-n);
+}
+
+function buildHeatTable({
+  title, unit,
+  years, lastYear, cutoffMonth,
+  seasonHeader,
+  bqLabel, bqYearLabel,
+  totalLabel,
+  cellBgFn, cellTextFn, cellRawFn,
+  bqTextFn, bqYearTextFn,
+  totalTextFn
+}){
+  let html='';
+  html += `<div class="card" style="margin-top:14px">`;
+  html += `<div class="cardHeader"><div class="cardTitle">${title}</div><div class="unit">${unit}</div></div>`;
+  html += `<div class="tableWrap"><table class="heatmapTable">`;
+
+  if(seasonHeader){
+    html += `<thead>`;
+    html += `<tr><th class="left">Season</th>`;
+    for(let m=1;m<=12;m++){ const s=seasonByMonth[m]; html += `<th style="background:${s.bg}">${s.name}</th>`; }
+    html += `<th style="background:#f9fafb">BQ</th>`;
+    html += `<th style="background:#f9fafb">BQ năm</th></tr>`;
+
+    html += `<tr><th class="left">Min %</th>`;
+    for(let m=1;m<=12;m++){ const s=seasonByMonth[m]; html += `<th style="background:${s.bg};font-weight:500;color:#6b7280;font-size:12px">Min ${(s.min*100).toFixed(0)}%</th>`; }
+    html += `<th style="background:#f9fafb;font-weight:500;color:#6b7280;font-size:12px">${bqLabel||''}</th>`;
+    html += `<th style="background:#f9fafb;font-weight:500;color:#6b7280;font-size:12px">${bqYearLabel||'BQ năm'}</th></tr>`;
+
+    html += `<tr><th class="left">Năm</th>`;
+    for(let m=1;m<=12;m++){ const s=seasonByMonth[m]; html += `<th style="background:${s.bg}">T${m}</th>`; }
+    html += `<th style="background:#f9fafb">BQ</th>`;
+    html += `<th style="background:#f9fafb">BQ năm</th></tr>`;
+    html += `</thead><tbody>`;
+  } else {
+    html += `<thead><tr><th class="left">Năm</th>`;
+    for(let m=1;m<=12;m++) html += `<th>T${m}</th>`;
+    if(bqTextFn) html += `<th>BQ</th>`;
+    if(bqYearTextFn) html += `<th>${bqYearLabel||'BQ năm'}</th>`;
+    if(totalTextFn) html += `<th>${totalLabel||'Total'}</th>`;
+    html += `</tr></thead><tbody>`;
+  }
+
+  for(const y of years.slice().sort((a,b)=>b-a)){
+    html += `<tr><td class="left" style="${y===lastYear?'font-weight:900':''}">${y}</td>`;
+    for(let m=1;m<=12;m++){
+      const bg = cellBgFn?cellBgFn(m):'#fff';
+      const raw = cellRawFn?cellRawFn(y,m):null;
+      let cls='pill';
+      if(y===lastYear && raw!=null && seasonHeader){
+        const min=seasonByMonth[m].min;
+        cls += (raw<min)?' curBad':' curGood';
+      }
+      const t = cellTextFn?cellTextFn(y,m):'';
+      const fw = (!seasonHeader && y===lastYear) ? 'font-weight:800;' : '';
+      html += `<td class="${cls}" style="background:${bg};${fw}">${t||''}</td>`;
+    }
+
+    if(bqTextFn){
+      const fwBQ = (!seasonHeader && y===lastYear) ? 'font-weight:800;' : (seasonHeader && y===lastYear ? 'font-weight:800;' : '');
+      html += `<td class="pill" style="background:#f9fafb;${fwBQ}">${bqTextFn(y)||''}</td>`;
+    }
+
+    if(bqYearTextFn){
+      const fwBY = (y===lastYear) ? 'font-weight:800;' : '';
+      html += `<td class="pill" style="background:#f9fafb;${fwBY}">${bqYearTextFn(y)||''}</td>`;
+    }
+
+    if(!seasonHeader && totalTextFn){
+      const fwTT = (y===lastYear) ? 'font-weight:800;' : '';
+      html += `<td class="pill" style="background:#f9fafb;${fwTT}">${totalTextFn(y)||''}</td>`;
+    }
+
+    html += `</tr>`;
+  }
+
+  html += `</tbody></table></div>`;
+  if(seasonHeader){
+    html += `<div class="heatmapNote">Cảnh báo <b>đỏ</b>: So cùng kỳ &lt; -10đ% · Dưới Min% mùa vụ. Áp dụng cho <b>năm hiện tại</b>.</div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+
+
+function renderYoYHeatmaps(prop){
+  const d = cache[prop];
+  if(!d) return;
+  const yearsCount = parseInt(elYears.value||'3',10);
+  const endYear = parseInt(elEndYear.value||'',10) || null;
+  const cutoffMonth = (new Date()).getMonth()+1;
+  const years = yearsFromEnd(d, endYear, yearsCount);
+  const lastYear = years[years.length-1];
+
+  const cspCard = buildHeatTable({
+    title:'1) Heatmap theo mùa (CSP)',
+    unit:'Đơn vị: %',
+    years, lastYear, cutoffMonth,
+    seasonHeader:true,
+
+    bqLabel:`đến T${cutoffMonth}`,
+    bqYearLabel:`BQ năm`,
+
+    cellBgFn:(m)=>seasonByMonth[m].bg,
+    cellRawFn:(y,m)=>{ const v=d.monthlyValues?.[y]?.[m]?.csp; return (v==null)?null:v; },
+    cellTextFn:(y,m)=>{ const v=d.monthlyValues?.[y]?.[m]?.csp; return (v==null)?'':fmtPct0(v); },
+
+    // BQ lũy kế tới tháng hiện tại
+    bqTextFn:(y)=>{
+      let occ=0, avail=0;
+      for(let m=1;m<=cutoffMonth;m++){
+        const mv=d.monthlyValues?.[y]?.[m];
+        if(mv && mv.availSum>0){
+          occ += (mv.occSum||0);
+          avail += (mv.availSum||0);
+        }
+      }
+      return (avail>0)?fmtPct0(occ/avail):'';
+    },
+
+    // BQ năm: năm hiện tại tính T1→tháng hiện tại; năm cũ tính theo tháng cuối có dữ liệu
+    bqYearTextFn:(y)=>{
+      const lastM = (yy)=>{
+        for(let m=12;m>=1;m--){
+          const mv=d.monthlyValues?.[yy]?.[m];
+          if(mv && mv.availSum>0) return m;
+        }
+        return 0;
+      };
+
+      const maxDataMonth = lastM(y);
+      const endM = (y===lastYear) ? Math.min(cutoffMonth, maxDataMonth) : maxDataMonth;
+
+      let occ=0, avail=0;
+      for(let m=1;m<=endM;m++){
+        const mv=d.monthlyValues?.[y]?.[m];
+        if(mv && mv.availSum>0){
+          occ += (mv.occSum||0);
+          avail += (mv.availSum||0);
+        }
+      }
+      return (avail>0)?fmtPct0(occ/avail):'';
+    },
+  });
+
+  const revCard = buildHeatTable({
+    title:'2) Doanh thu phòng (Revenue)',
+    unit:'Đơn vị: Triệu VND',
+    years, lastYear, cutoffMonth,
+    seasonHeader:false,
+    bqLabel:null,
+    totalLabel:'Total',
+    cellBgFn:()=> '#fff',
+    cellTextFn:(y,m)=>{ const v=d.monthlyValues?.[y]?.[m]?.rev; return (v==null)?'':fmtMillion0(v); },
+    bqTextFn:(y)=>{
+      let sum=0,cnt=0;
+      for(let m=1;m<=cutoffMonth;m++){
+        const v=d.monthlyValues?.[y]?.[m]?.rev;
+        if(v!=null && Number.isFinite(v)){ sum+=v; cnt++; }
+      }
+      return cnt?fmtMillion0(sum/cnt):'';
+    },
+
+    bqYearLabel:`BQ năm`,
+    bqYearTextFn:(y)=>{
+      // BQ năm: năm hiện tại tính T1→tháng hiện tại; năm cũ tính theo tháng cuối có dữ liệu
+      const lastM = (yy)=>{
+        for(let m=12;m>=1;m--){
+          const mv=d.monthlyValues?.[yy]?.[m];
+          const v = mv?.rev;
+          if(v!=null && Number.isFinite(v)) return m;
+        }
+        return 0;
+      };
+      const maxDataMonth = lastM(y);
+      const endM = (y===lastYear) ? Math.min(cutoffMonth, maxDataMonth) : maxDataMonth;
+
+      let sum=0, cnt=0;
+      for(let m=1;m<=endM;m++){
+        const v=d.monthlyValues?.[y]?.[m]?.rev;
+        if(v!=null && Number.isFinite(v)){ sum+=v; cnt++; }
+      }
+      return cnt?fmtMillion0(sum/cnt):'';
+    },
+    totalTextFn:(y)=>{
+      let sum=0,has=false;
+      const endM = (y===lastYear)?cutoffMonth:12;
+      for(let m=1;m<=endM;m++){
+        const v=d.monthlyValues?.[y]?.[m]?.rev;
+        if(v!=null && Number.isFinite(v)){ sum+=v; has=true; }
+      }
+      return has?fmtMillion0(sum):'';
+    },
+  });
+
+  const adrCard = buildHeatTable({
+    title:'3) Giá bình quân (ADR)',
+    unit:'Đơn vị: Triệu VND',
+    years, lastYear, cutoffMonth,
+    seasonHeader:false,
+    bqLabel:null,
+    totalLabel:null,
+    cellBgFn:()=> '#fff',
+    cellTextFn:(y,m)=>{ const v=d.monthlyValues?.[y]?.[m]?.adr; return (v==null)?'':fmtMillion2(v); },
+    bqTextFn:(y)=>{
+      let sumRev=0, sumOcc=0;
+      for(let m=1;m<=cutoffMonth;m++){
+        const mv=d.monthlyValues?.[y]?.[m];
+        if(mv && mv.rev!=null && mv.occSum>0){ sumRev += mv.rev; sumOcc += mv.occSum; }
+      }
+      return (sumOcc>0)?fmtMillion2(sumRev/sumOcc):'';
+    },
+
+    bqYearLabel:`BQ năm`,
+    bqYearTextFn:(y)=>{
+      // BQ năm: năm hiện tại tính T1→tháng hiện tại; năm cũ tính theo tháng cuối có dữ liệu
+      const lastM = (yy)=>{
+        for(let m=12;m>=1;m--){
+          const mv=d.monthlyValues?.[yy]?.[m];
+          if(mv && mv.rev!=null && mv.occSum>0) return m;
+        }
+        return 0;
+      };
+      const maxDataMonth = lastM(y);
+      const endM = (y===lastYear) ? Math.min(cutoffMonth, maxDataMonth) : maxDataMonth;
+
+      let sumRev=0, sumOcc=0;
+      for(let m=1;m<=endM;m++){
+        const mv=d.monthlyValues?.[y]?.[m];
+        if(mv && mv.rev!=null && mv.occSum>0){
+          sumRev += mv.rev;
+          sumOcc += mv.occSum;
+        }
+      }
+      return (sumOcc>0)?fmtMillion2(sumRev/sumOcc):'';
+    },
+  });
+
+  document.getElementById('tableCsp').innerHTML = cspCard;
+  document.getElementById('tableRev').innerHTML = revCard;
+  document.getElementById('tableAdr').innerHTML = adrCard;
 }
 
 /* =========================
@@ -922,11 +1170,6 @@ function renderSummary(prop, endYear, cutoffMonth){
   const prev = cache[prop].years.includes(prevY) ? computeYTD(prop, prevY, cutoffMonth) : {csp:null, adr:null, rev:null};
 
   document.getElementById("ytdCsp").textContent = fmtPct0Dash(cur.csp);
-  // Alert in Summary: YTD CSP < YTD CSP LY - 10pp
-  const yoyDropYTD = (cur.csp!=null && prev.csp!=null && Number.isFinite(cur.csp) && Number.isFinite(prev.csp))
-    ? (cur.csp < (prev.csp - 0.10)) : false;
-  document.getElementById("ytdCsp").classList.toggle("alert", yoyDropYTD);
-
   document.getElementById("ytdAdr").textContent = cur.adr==null ? "-" : fmtInt(cur.adr);
   document.getElementById("ytdRev").textContent = cur.rev==null ? "-" : fmtInt(cur.rev);
 
@@ -939,9 +1182,7 @@ function renderSourceInfo(prop){
   const d = cache[prop];
   const exportTime = (d.meta.a2 || "-").trim();
 
-  document.getElementById("exportTime").textContent = exportTime;
-    // keep source static
-    // document.getElementById("sourceInfo").innerHTML =
+  document.getElementById("sourceInfo").innerHTML =
     `Nguồn dữ liệu: <b>PMS EzCloud</b><br>` +
     `<b>Export:</b> <span style="font-weight:900;color:#111827">${exportTime}</span>`;
 }
@@ -1098,29 +1339,6 @@ function buildTitleALL(metricKey, endYear, viewMode, cutoffMonth){
   return `${metricName} – ALL (Hotel/Resort/Central) – ${endYear}`;
 }
 
-
-function parseExportDT(s){
-  if(!s) return null;
-  const m = String(s).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
-  if(!m) return null;
-  const dd=parseInt(m[1],10), mm=parseInt(m[2],10)-1, yyyy=parseInt(m[3],10);
-  const hh=parseInt(m[4],10), mi=parseInt(m[5],10), ss=parseInt(m[6]||"0",10);
-  return new Date(yyyy,mm,dd,hh,mi,ss);
-}
-function pickLatestExport(){
-  const items = [
-    {name:"Hotel", s: cache.Hotel?.meta?.a2 || ""},
-    {name:"Resort", s: cache.Resort?.meta?.a2 || ""},
-    {name:"Central", s: cache.Central?.meta?.a2 || ""},
-  ];
-  let best = null;
-  for(const it of items){
-    const dt = parseExportDT(it.s);
-    if(dt && (!best || dt>best.dt)) best = {dt, name:it.name, s:it.s};
-  }
-  return best || {name:"Hotel", s: items[0].s};
-}
-
 function renderChart(){
   const mode = elMode.value;
   const metricKey = elMetric.value;
@@ -1134,45 +1352,42 @@ function renderChart(){
     ({labels, datasets, cutoffMonth} = buildALLSeries(metricKey, viewMode, endYear));
     title = buildTitleALL(metricKey, endYear, viewMode, cutoffMonth);
 
-    const summaryCutoff = Math.min(cutoffMonth, CURRENT_MONTH);
-    document.getElementById("asOf").textContent = `Tính đến: ${summaryCutoff}/${endYear}`;
-    renderSummary("Hotel", endYear, summaryCutoff);
+    document.getElementById("asOf").textContent = (()=>{const d=new Date();return `Tính đến: ${d.getMonth()+1}/${d.getFullYear()}`;})();
+    renderSummary("Hotel", endYear, cutoffMonth);
 
-    document.getElementById("exportTime").textContent = exportTime;
-    // keep source static
-    // document.getElementById("sourceInfo").innerHTML =
+    document.getElementById("sourceInfo").innerHTML =
       `<b>Hotel</b>: ${cache.Hotel.meta.a1} ${cache.Hotel.meta.a2} · StartDate=${PMS_START.Hotel}<br>`+
       `<b>Resort</b>: ${cache.Resort.meta.a1} ${cache.Resort.meta.a2} · StartDate=${PMS_START.Resort}<br>`+
       `<b>Central</b>: ${cache.Central.meta.a1} ${cache.Central.meta.a2} · StartDate=${PMS_START.Central}`;
 
     document.getElementById("chartSubtitle").textContent = "So sánh 3 khu (monthly)";
-    const latest = pickLatestExport();
-    const exportText = (latest && latest.s) ? latest.s : "—";
-    const line = document.getElementById("allDataLine");
-    if(line){
-      line.style.display = "block";
-      line.textContent = `Nguồn dữ liệu: PMS EzCloud · Export: ${exportText}`;
-    }
-
   } else {
-    // hide ALL data line in non-ALL modes
-    const line = document.getElementById("allDataLine");
-    if(line) line.style.display = "none";
-
     const prop = elProperty.value;
     const d = cache[prop];
     const yearsShown = parseInt(elYears.value,10);
     const yearsRange = computeYearsRange(d.years, endYear, yearsShown);
 
     ({labels, datasets, cutoffMonth} = buildYoYSeries(prop, metricKey, yearsRange, viewMode, endYear));
-    title = buildTitleYoY(prop, metricKey, yearsRange, viewMode, cutoffMonth);
+title = buildTitleYoY(prop, metricKey, yearsRange, viewMode, cutoffMonth);
 
-    const summaryCutoff = Math.min(cutoffMonth, CURRENT_MONTH);
-    document.getElementById("asOf").textContent = `Tính đến: ${summaryCutoff}/${endYear}`;
-    const summaryCutoff2 = Math.min(cutoffMonth, CURRENT_MONTH);
-    renderSummary(prop, endYear, summaryCutoff2);
-    document.getElementById("asOf").textContent = `Tính đến: ${summaryCutoff2}/${endYear}`;
-    renderSourceInfo(prop);
+// Summary: luôn tính tới THÁNG HIỆN TẠI nếu endYear = năm hiện tại (VD 2026)
+// và không vượt quá tháng dữ liệu thật sự (phòng trường hợp export thiếu)
+const dataAsOf = cache[prop]?.asOfMonthByYear?.[endYear] || 12;
+let summaryCutoffMonth = cutoffMonth;
+
+if(viewMode === "YTD"){
+  if(endYear === AS_OF_YEAR){
+    summaryCutoffMonth = Math.min(AS_OF_MONTH, dataAsOf);
+  } else {
+    summaryCutoffMonth = Math.min(dataAsOf, 12);
+  }
+}
+
+// Label “Tính đến” của box Summary hiển thị theo summaryCutoffMonth
+document.getElementById("asOf").textContent = `Tính đến: ${summaryCutoffMonth}/${endYear}`;
+
+renderSummary(prop, endYear, summaryCutoffMonth);
+renderSourceInfo(prop);
     document.getElementById("chartSubtitle").textContent =
       (chartType==="bar") ? "So sánh theo năm (monthly) + Line End year" : "So sánh theo năm (monthly)";
   }
@@ -1200,20 +1415,6 @@ function renderChart(){
       interaction:{ mode:"index", intersect:false },
       scales: {
         x: {
-            ticks: {
-              callback: function(value, index){
-                const label = this.getLabelForValue(value);
-                try{
-                  if(metricKey==='csp'){
-                    const flags = getCspAlertFlags(prop, endYear);
-                    const m = index+1;
-                    if(flags[index]) return label + ' ⚠';
-                  }
-                }catch(e){}
-                return label;
-              }
-            },
-
           stacked:false,
           grid:{ color:"rgba(229,231,235,.45)" },
           ticks:{ font:{weight:"700"} }
@@ -1269,28 +1470,7 @@ function renderChart(){
             return OCEAN;
           },
           font:{ weight:"800", size: dlSize },
-          formatter:(v,ctx)=>{
-            const base = dataLabelFormatter(metricKey, v);
-            if(metricKey!=='csp') return base;
-            try{
-              const m = (ctx.dataIndex||0) + 1;
-              const endYear = parseInt(elEndYear.value,10);
-              let prop = elProperty.value;
-              if(elMode.value==='ALL') prop = propFromLabel(ctx.dataset.label) || prop;
-              // determine which year to evaluate
-              let year = endYear;
-              if(elMode.value!=='ALL'){
-                // YOY: only mark on endYear dataset
-                const endYearLabel = String(endYear);
-                if(String(ctx.dataset.label)!==endYearLabel) return base;
-                year = endYear;
-              }
-              const cur = cache?.[prop]?.monthlyValues?.[year]?.[m]?.csp;
-              const prev = cache?.[prop]?.monthlyValues?.[year-1]?.[m]?.csp;
-              if(shouldAlertCSP(m, cur, prev)) return base + ' ⚠';
-            }catch(e){}
-            return base;
-          }
+          formatter:(v)=> dataLabelFormatter(metricKey, v)
         },
         alignLineToEndYearBars: {
           enabled: (mode==="YOY" && chartType==="bar" && targetBarDatasetIndex !== null && targetBarDatasetIndex>=0),
@@ -1307,15 +1487,6 @@ function renderChart(){
 /* =========================
    EVENTS + BOOT
 ========================= */
-
-function propFromLabel(label){
-  if(!label) return null;
-  const t = String(label);
-  if(t.includes('Beach')) return 'Hotel';
-  if(t.includes('Resort')) return 'Resort';
-  if(t.includes('Central')) return 'Central';
-  return null;
-}
 function rerenderAll(){
   applyPageTitle();
   applyModeUI();
@@ -1326,7 +1497,7 @@ function rerenderAll(){
   rebuildEndYearOptions();
 
   if(elMode.value !== "ALL"){
-    renderTables(elProperty.value);
+    renderYoYHeatmaps(elProperty.value);
   }
   renderChart();
 }
@@ -1336,7 +1507,7 @@ elMode.addEventListener("change", rerenderAll);
 elProperty.addEventListener("change", ()=>{
   applyPageTitle();
   rebuildEndYearOptions();
-  if(elMode.value !== "ALL") renderTables(elProperty.value);
+  if(elMode.value !== "ALL") renderYoYHeatmaps(elProperty.value);
   renderChart();
 });
 
@@ -1361,7 +1532,7 @@ elRefresh.addEventListener("click", async ()=>{
   applyGridLayout();
   rebuildEndYearOptions();
   applyPageTitle();
-  if(elMode.value !== "ALL") renderTables(elProperty.value);
+  if(elMode.value !== "ALL") renderYoYHeatmaps(elProperty.value);
   renderChart();
 })();
 
