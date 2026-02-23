@@ -204,7 +204,7 @@ function setStatus(msg,isError){
   const el=document.getElementById('status');
   el.innerHTML=(isError?'<span class="error">LỖI: </span>':'')+msg;
 }
-function splitLines(t){return t.replace(/\r/g,'').split('\n');}
+
 function csvSplit(line){
   const out=[];
   let cur='', inQ=false;
@@ -224,17 +224,91 @@ function csvSplit(line){
   out.push(cur);
   return out;
 }
-  function parseCSV(text){
-  const lines=splitLines(text).filter(l=>l!=null && String(l).trim()!=='');
-  if(lines.length===0) return {headers:[],rows:[],meta:{exportTime:null,source:null}};
-  const norm=s=>String(s||'').toLowerCase().replace(/\s+/g,' ').trim();
-  let headerIdx=0;
-  for(let i=0;i<Math.min(lines.length,60);i++){
-   const cols=csvSplit(lines[i]).map(s=>s.trim());
-    const hasDate = cols.some(c=>norm(c)==='date');
-    const hasOcc  = cols.some(c=>norm(c)==='occupancy');
-    if(hasDate && hasOcc){ headerIdx=i; break; }
+  function csvParse(text){
+  const rows = [];
+  let cur = [];
+  let val = "";
+  let inQ = false;
+
+  for(let i=0;i<text.length;i++){
+    const c = text[i];
+    const next = text[i+1];
+
+    if(inQ){
+      if(c === '"' && next === '"'){ val += '"'; i++; continue; }
+      if(c === '"'){ inQ = false; continue; }
+      val += c; continue;
+    } else {
+      if(c === '"'){ inQ = true; continue; }
+      if(c === ','){ cur.push(val); val=""; continue; }
+      if(c === '\n'){ cur.push(val); rows.push(cur); cur=[]; val=""; continue; }
+      if(c === '\r'){ continue; }
+      val += c;
+    }
   }
+  cur.push(val);
+  rows.push(cur);
+  return rows;
+}
+
+function parseCSV(text){
+  const raw = csvParse(text);
+
+  // remove empty rows
+  const rows2 = raw
+    .map(r => r.map(x => (x==null?"":String(x)).trim()))
+    .filter(r => r.some(x => x !== ""));
+
+  if(rows2.length === 0) return {headers:[],rows:[],meta:{exportTime:null,source:null}};
+
+  const norm = s => String(s||"").toLowerCase().replace(/\s+/g," ").trim();
+
+  // auto-detect header row
+  let headerIdx = 0;
+  for(let i=0;i<Math.min(rows2.length,80);i++){
+    const cols = rows2[i];
+    const hasDate = cols.some(c => norm(c) === "date");
+    const hasOcc  = cols.some(c => norm(c) === "occupancy");
+    if(hasDate && hasOcc){ headerIdx = i; break; }
+  }
+
+  // meta lines (before header)
+  const meta = { exportTime:null, source:'PMS EzCloud' };
+  const metaText = rows2.slice(0,headerIdx).map(r => r.join(" ")).join(" | ");
+
+  const dtRegex = /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})\s+(\d{1,2}:\d{2}(?::\d{2})?)/;
+  const m = metaText.match(dtRegex);
+  if(m){
+    let d=m[1], t=m[2];
+    if(/^\d{4}[\/\-]/.test(d)){
+      const parts=d.split(/[\/\-]/).map(x=>parseInt(x,10));
+      const yy=parts[0], mm=('0'+parts[1]).slice(-2), dd=('0'+parts[2]).slice(-2);
+      d=`${dd}/${mm}/${yy}`;
+    }else{
+      const parts=d.split(/[\/\-]/).map(x=>parseInt(x,10));
+      if(parts.length===3){
+        const dd=('0'+parts[0]).slice(-2), mm=('0'+parts[1]).slice(-2);
+        let yy=parts[2]; if(yy<100) yy+=2000;
+        d=`${dd}/${mm}/${yy}`;
+      }
+    }
+    meta.exportTime = `${d} ${t}`;
+  }
+
+  const headers = rows2[headerIdx].map(x => String(x||"").trim());
+  const outRows = [];
+
+  for(let i=headerIdx+1;i<rows2.length;i++){
+    const cols = rows2[i];
+    const row = {};
+    for(let j=0;j<headers.length;j++){
+      row[headers[j]] = (cols[j] ?? "").trim();
+    }
+    outRows.push(row);
+  }
+
+  return { headers, rows: outRows, meta };
+}
 
   const metaLines = lines.slice(0,headerIdx).join(' | ');
   const meta = { exportTime:null, source:'PMS EzCloud' };
