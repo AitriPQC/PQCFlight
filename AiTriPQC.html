@@ -336,6 +336,18 @@ margin-bottom:16px;
         }
       }
 
+      @media (max-width: 1200px){
+        .master-kpi-grid{grid-template-columns:repeat(3, minmax(0,1fr));}
+      }
+
+      @media (max-width: 760px){
+        .master-kpi-grid{grid-template-columns:repeat(2, minmax(0,1fr));}
+      }
+
+      @media (max-width: 520px){
+        .master-kpi-grid{grid-template-columns:1fr;}
+      }
+
       .master-overview-wrap{
 
         background:#ffffff;
@@ -385,8 +397,38 @@ margin-bottom:16px;
       .master-kpi-grid{
         display:grid;
         grid-template-columns:repeat(5, minmax(0,1fr));
-        gap:16px;
-        margin-bottom:20px;
+        gap:14px;
+        margin:0;
+      }
+
+      .kpi-strip-wrap{
+        background:#ffffff;
+        border-radius:18px;
+        padding:14px 16px;
+        box-shadow:0 8px 24px rgba(15,23,42,0.05);
+        border:1px solid #e5e7eb;
+      }
+
+      .kpi-strip-top{
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:12px;
+        flex-wrap:wrap;
+        margin-bottom:12px;
+      }
+
+      .kpi-strip-note{
+        display:flex;
+        align-items:center;
+        gap:10px;
+        flex-wrap:wrap;
+      }
+
+      .kpi-strip-text{
+        font-size:13px;
+        font-weight:700;
+        color:#475569;
       }
 
       .master-kpi-card{
@@ -428,6 +470,46 @@ margin-bottom:16px;
         display:grid;
         grid-template-columns:1.15fr 0.85fr;
         gap:16px;
+      }
+
+      .stats-block{
+        background:#ffffff;
+        border:1px solid #e5e7eb;
+        border-radius:18px;
+        padding:18px;
+        box-shadow:0 8px 24px rgba(15,23,42,0.06);
+      }
+
+      .stats-block-title{
+        font-size:20px;
+        font-weight:800;
+        color:#0f172a;
+        margin:0 0 14px 0;
+      }
+
+      .stats-block-grid{
+        display:grid;
+        grid-template-columns:minmax(0, 1.05fr) minmax(320px, 0.95fr);
+        gap:18px;
+        align-items:start;
+      }
+
+      .stats-table-wrap{
+        overflow-x:auto;
+      }
+
+      .stats-chart-wrap{
+        background:#f8fafc;
+        border:1px solid #e2e8f0;
+        border-radius:16px;
+        padding:10px 10px 2px;
+      }
+
+      .stats-empty{
+        text-align:center;
+        color:#64748b;
+        padding:18px;
+        font-style:italic;
       }
 
       .master-panel{
@@ -523,6 +605,7 @@ margin-bottom:16px;
       @media (max-width: 900px){
         .master-kpi-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); }
         .master-detail-grid{ grid-template-columns:1fr; }
+        .stats-block-grid{ grid-template-columns:1fr; }
       }
 
       @media (max-width: 640px){
@@ -531,6 +614,8 @@ margin-bottom:16px;
         .master-mini-grid{ grid-template-columns:1fr; }
         .master-kpi-value{ font-size:28px; }
         .master-overview-title{ font-size:18px; }
+        .stats-block{ padding:14px; }
+        .stats-block-title{ font-size:18px; }
       }
 
         .master-summary-table{
@@ -798,13 +883,6 @@ margin-bottom:16px;
         internationalFlights: internationalCounts[date] || 0
       }));
     };
-
-    const getCharterFlights = () => {
-      return getFilteredData()
-        .filter(row => row.isCharter)
-        .sort((a, b) => b.date.getTime() - a.date.getTime() || parseTimeToFraction(b.time) - parseTimeToFraction(a.time));
-    };
-
     const App = () => {
       const today = new Date(); // Default to today: 27/10/2025
       const [data, setData] = useState([]);
@@ -840,10 +918,10 @@ margin-bottom:16px;
           cityHeader: 'Thành phố',
           timeHeader: 'Thời gian',
           flightNoHeader: 'Số hiệu chuyến bay',
-          pie1: '1. Nội địa vs Quốc tế',
-          pie2: '2. Chuyến bay Quốc tế',
-          pie3: '3. Thống kê theo hãng bay',
-          pie4: '4. Thống kê theo Thành phố',
+          pie2: '1. Thống kê chuyến bay quốc tế',
+          pie4: '2. Thống kê chuyến bay theo Thành phố',
+          pie3: '3. Thống kê chuyến bay theo Hãng',
+          pie5: '4. Thống kê chuyến bay Charter',
           list: 'Danh sách:',
           stt: 'STT',
           name: 'Tên',
@@ -878,10 +956,10 @@ margin-bottom:16px;
           cityHeader: 'City',
           timeHeader: 'Time',
           flightNoHeader: 'Flight No',
-          pie1: '1. Domestic vs International',
-          pie2: '2. International Flights',
-          pie3: '3. Statistics by Airline',
-          pie4: '4. Statistics by City',
+          pie2: '1. International Flight Statistics',
+          pie4: '2. Flight Statistics by City',
+          pie3: '3. Flight Statistics by Airline',
+          pie5: '4. Charter Flight Statistics',
           list: 'List:',
           stt: 'No.',
           name: 'Name',
@@ -954,13 +1032,6 @@ margin-bottom:16px;
         });
         return filtered;
       };
-
-      const getCharterFlights = () => {
-        return getFilteredData()
-          .filter(row => row.isCharter)
-          .sort((a, b) => b.date.getTime() - a.date.getTime() || parseTimeToFraction(b.time) - parseTimeToFraction(a.time));
-      };
-
       const getCharterDetailText = (item) => {
         const unit = language === 'vi' ? 'chuyến' : 'flights';
         return language === 'vi' ? `${item.value} ${unit}. Bay từ:` : `${item.value} ${unit}. From:`;
@@ -1024,7 +1095,7 @@ margin-bottom:16px;
         const internationalLabel = language === 'vi' ? 'Quốc tế' : 'International';
         const domesticValue = domesticInternational.find(item => item.name === domesticLabel)?.value || 0;
         const internationalValue = domesticInternational.find(item => item.name === internationalLabel)?.value || 0;
-        const charterValue = charterFlights.length || 0;
+        const charterValue = charterCountries.reduce((sum, item) => sum + item.value, 0);
 
         const domesticPct = totalDomesticIntl > 0 ? Math.round((domesticValue / totalDomesticIntl) * 100) : 0;
         const intlPct = totalDomesticIntl > 0 ? Math.round((internationalValue / totalDomesticIntl) * 100) : 0;
@@ -1032,33 +1103,13 @@ margin-bottom:16px;
         const avgTotalPerDay = numDays > 0 ? Math.round(totalFlights / numDays) : 0;
         const avgCharterPerDay = numDays > 0 ? Math.round(charterValue / numDays) : 0;
 
-        const topMarketsData = aggregateData(
-          filteredData.filter(r => r.isInternational),
-          'country',
-          startDate,
-          endDate
-        );
-        const topMarkets = topMarketsData.slice(0, 5).map(item => item.name).join(' / ') || 'Không có dữ liệu';
-
-        const topAirlinesData = byAirline.slice(0, 5);
-        const topCitiesData = byCity.slice(0, 5);
-        const charterCountriesData = charterCountries.slice(0, 5);
-        const topAirline = topAirlinesData[0];
-        const topCity = topCitiesData[0];
-        const topCharterCountry = charterCountriesData[0];
-        const intlCount = filteredData.filter(r => r.isInternational).length;
-        const charterCount = charterCountries.reduce((sum, item) => sum + item.value, 0);
         const flightsByDate = aggregateFlightsByDate(filteredData, startDate, endDate);
         const totalTrend = getSeriesTrendFromFlights(flightsByDate, 'totalFlights');
-        const avgLast7 = totalTrend.currentAvg;
-        const avgPrev7 = totalTrend.previousAvg;
         const trendText = `MA7 ${totalTrend.text}`;
         const trendClass = `master-trend-${totalTrend.className}`;
         const trendArrow = totalTrend.arrow;
 
-        const pctText = (value, total) => total > 0 ? `${Math.round((value / total) * 100)}%` : '0%';
         const avgSuffix = language === 'vi' ? 'chuyến/ngày' : 'flights/day';
-        const avgItemText = (value) => `≈ ${Math.round(value / Math.max(numDays, 1))} ${avgSuffix}`;
 
         const peakDay = flightsByDate.length ? flightsByDate.reduce((max, item) => item.totalFlights > max.totalFlights ? item : max, flightsByDate[0]) : null;
         const lowDay = flightsByDate.length ? flightsByDate.reduce((min, item) => item.totalFlights < min.totalFlights ? item : min, flightsByDate[0]) : null;
@@ -1071,13 +1122,11 @@ margin-bottom:16px;
         };
 
         return (
-          <div className="master-overview-wrap">
-            <div className="master-overview-header">
-              <div>
-                <h3 className="master-overview-title">Xu hướng chuyến bay đến Phú Quốc</h3>
-                <div className="master-overview-sub">
-                  <span className={`master-trend-pill ${trendClass}`}>{trendArrow} {trendText}</span>
-                </div>
+          <div className="kpi-strip-wrap">
+            <div className="kpi-strip-top">
+              <div className="kpi-strip-note">
+                <span className={`master-trend-pill ${trendClass}`}>{trendArrow} {trendText}</span>
+                <span className="kpi-strip-text">MA7 hiện tại ≈ {Math.round(totalTrend.currentAvg)} chuyến/ngày; 7 ngày trước ≈ {Math.round(totalTrend.previousAvg)} chuyến/ngày</span>
               </div>
               <div className="master-chip">{formatNumber(totalFlights)} chuyến | {numDays} ngày</div>
             </div>
@@ -1113,179 +1162,161 @@ margin-bottom:16px;
                 <div className="master-kpi-meta">{lowDay ? `${fmtDate(lowDay.date)} | ≈ ${lowDay.totalFlights} chuyến` : '-'}</div>
               </div>
             </div>
-
-            <div className="master-detail-grid" style={{marginTop:'4px'}}>
-              <div className="master-panel">
-                <div className="master-panel-title">Top thị trường quốc tế</div>
-                <ol className="master-rank-list">
-                  {topMarketsData.slice(0, 5).map((item, index) => (
-                    <li key={`market-${index}`}><strong>{item.name}</strong> — {formatNumber(item.value)} chuyến ({pctText(item.value, intlCount)}, ≈ {Math.round(item.value / Math.max(numDays, 1))} {avgSuffix})</li>
-                  ))}
-                </ol>
-              </div>
-
-              <div className="master-panel">
-                <div className="master-panel-title">Top Charter Quốc tế</div>
-                <ol className="master-rank-list">
-                  {charterCountries.slice(0, 5).map((item, index) => (
-                    <li key={`charter-${index}`}><strong>{item.name}</strong> — {formatNumber(item.value)} chuyến ({pctText(item.value, charterValue)}, ≈ {Math.round(item.value / Math.max(numDays, 1))} {avgSuffix})</li>
-                  ))}
-                  {charterCountries.length === 0 && (
-                    <li>Không có dữ liệu charter quốc tế trong giai đoạn đã chọn.</li>
-                  )}
-                </ol>
-              </div>
-            </div>
           </div>
         );
       };
 
-      // Updated to Top 5 with %
-      const renderTop5Summary = (topData, type) => {
-        const unit = language === 'vi' ? 'chuyến' : 'flights';
-        const avgText = language === 'vi' ? 'chuyến/ngày' : 'flights/day';
-        const totalForPct = type === 'domestic' ? topDomesticData.reduce((sum, item) => sum + item.value, 0) : 
-                           type === 'international' ? topIntlCities.reduce((sum, item) => sum + item.value, 0) : totalFlights;
-        const items = topData.slice(0, 5).map((item, index) => {
-          const pct = totalForPct > 0 ? Math.round((item.value / totalForPct) * 100) : 0;
-          const pctDisplay = pct >= 1 ? ` (${pct}%)` : '';
-          const avgItem = showAvg ? ` (≈ ${Math.round(item.value / numDays)} ${avgText})` : '';
-          return (
-            <span key={index}>
-              {index + 1}. <strong>{item.name}</strong> – {item.value}{pctDisplay}{avgItem}
-            </span>
-          );
-        });
-        return items;
-      };
-
-      const renderPieChart = (data, title, key) => {
+      const renderStatsBlock = (data, title, key) => {
         const total = data.reduce((sum, item) => sum + item.value, 0);
-        const formattedTitle = title.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
-        const showLegend = !['airline', 'city'].includes(key);
-        const isDomesticInternational = key === 'domesticInternational';
         let displayData = data;
         let showMoreBtn = false;
         let showLessBtn = false;
-        let [showAll, setShowAll] = [false, () => {}];
+        let setShowAll = () => {};
 
         if (key === 'country') {
           displayData = showAllCountry ? data : data.slice(0, 5);
-          showMoreBtn = data.length > 10 && !showAllCountry;
+          showMoreBtn = data.length > 5 && !showAllCountry;
           showLessBtn = showAllCountry;
-          [showAll, setShowAll] = [showAllCountry, setShowAllCountry];
+          setShowAll = setShowAllCountry;
         } else if (key === 'airline') {
           displayData = showAllAirline ? data : data.slice(0, 5);
-          showMoreBtn = data.length > 10 && !showAllAirline;
+          showMoreBtn = data.length > 5 && !showAllAirline;
           showLessBtn = showAllAirline;
-          [showAll, setShowAll] = [showAllAirline, setShowAllAirline];
+          setShowAll = setShowAllAirline;
         } else if (key === 'city') {
           displayData = showAllCity ? data : data.slice(0, 5);
-          showMoreBtn = data.length > 10 && !showAllCity;
+          showMoreBtn = data.length > 5 && !showAllCity;
           showLessBtn = showAllCity;
-          [showAll, setShowAll] = [showAllCity, setShowAllCity];
+          setShowAll = setShowAllCity;
+        } else if (key === 'charter') {
+          displayData = showAllCis ? data : data.slice(0, 5);
+          showMoreBtn = data.length > 5 && !showAllCis;
+          showLessBtn = showAllCis;
+          setShowAll = setShowAllCis;
         }
 
-        const isSmallPie = ['country', 'airline', 'city'].includes(key);
-        const pieHeight = 210;
-        const outerRadius = 82;
-        const innerRadius = 48;
+        const chartHeight = 300;
+        const outerRadius = 92;
+        const innerRadius = 50;
+        const initialRows = 7;
+
+        const tableRows = (() => {
+          if (showLessBtn) return displayData;
+          const rows = [...displayData];
+          if (rows.length === 5) {
+            rows.push({ stt: 6, name: 'Others', value: Math.max(0, total - rows.reduce((s, i) => s + i.value, 0)), placeholder: false });
+          }
+          while (rows.length < initialRows) {
+            rows.push({ stt: rows.length + 1, name: '', value: '', percentageText: '', placeholder: true });
+          }
+          return rows;
+        })();
+
         const customLabel = (entry) => {
           const percentage = total > 0 ? Math.round((entry.value / total) * 100) : 0;
-          const nameDisplay = isSmallPie ? entry.name.slice(0, 8) : entry.name;
-          const pctDisplay = percentage >= 1 ? ` ${percentage}%` : '';
-          return `${nameDisplay}${pctDisplay}`;
+          const shortName = entry.name.length > 14 ? `${entry.name.slice(0, 14)}…` : entry.name;
+          return percentage >= 4 ? `${shortName} ${percentage}%` : shortName;
         };
 
-        let domesticItem = null, intlItem = null, domesticPct = 0, intlPct = 0, leadLabel = '', leadValue = 0;
-        if (isDomesticInternational) {
-          domesticItem = data.find(item => /Nội địa|Domestic/i.test(item.name)) || data[0] || {name:'Nội địa', value:0};
-          intlItem = data.find(item => /Quốc tế|International/i.test(item.name)) || data[1] || {name:'Quốc tế', value:0};
-          domesticPct = total > 0 ? Math.round((domesticItem.value / total) * 100) : 0;
-          intlPct = total > 0 ? Math.round((intlItem.value / total) * 100) : 0;
-          leadValue = Math.abs(domesticItem.value - intlItem.value);
-          leadLabel = domesticItem.value >= intlItem.value ? domesticItem.name : intlItem.name;
-        }
-
         return (
-          <div className={`pie-card ${isSmallPie ? 'small-pie' : ''}`.trim()}>
-            <h3 className="pie-card-title">{formattedTitle}</h3>
-            <div className="pie-chart-wrap"><ResponsiveContainer width="100%" height={pieHeight}>
-              <PieChart>
-                <Pie
-                  data={displayData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={outerRadius}
-                  innerRadius={innerRadius}
-                  fill="#8884d8"
-                  label={customLabel}
-                  labelLine={false}
-                >
-                  {displayData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                  {isDomesticInternational && (
-                    <Label
-                      value={`${domesticPct}% / ${intlPct}%`}
-                      position="center"
-                      style={{ fill: '#0f172a', fontWeight: 800, fontSize: 18 }}
-                    />
-                  )}
-                </Pie>
-                <Tooltip className="custom-tooltip" />
-                {showLegend && <Legend className="custom-legend" />}
-              </PieChart>
-            </ResponsiveContainer></div>
-            <div className="mt-4">
-              <h4 className="text-md font-semibold mb-2">{t('list')}</h4>
-              <div className="table-container">
-                <table className="responsive-table w-full text-left border-collapse border border-gray-300 pie-table">
-                  <thead>
-                    <tr className="bg-gray-200">
-                      <th className="border border-gray-300 font-bold">{t('stt')}</th>
-                      <th className="border border-gray-300 font-bold">{t('name')}</th>
-                      <th className="border border-gray-300 font-bold">{t('flights')}</th>
-                      <th className="border border-gray-300 font-bold italic">{t('percentage')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {displayData.map((item, index) => {
-                      const avg = item.value / numDays;
-                      const avgSuffix = (numDays > 1 && avg >= 1) ? <span className="text-sm text-gray-500 font-normal"> ({Math.round(avg)} {avgText})</span> : null;
-                      const percentage = total > 0 ? Math.round((item.value / total) * 100) : 0;
-                      const pctDisplay = percentage >= 1 ? `${percentage}%` : '';
-                      return (
-                        <tr key={`cell-${index}`} className="border-t border-gray-300">
-                          <td className="border border-gray-300 font-semibold text-gray-700">{item.stt}</td>
-                          <td className="border border-gray-300 font-bold text-blue-600">{item.name}</td>
-                          <td className="border border-gray-300 font-semibold">{item.value}{avgSuffix}</td>
-                          <td className="border border-gray-300 italic text-green-600">{pctDisplay}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              {showMoreBtn && (
-                <button
-                  className="mt-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm"
-                  onClick={() => setShowAll(true)}
-                >
-                  {t('more')}
-                </button>
-              )}
-              {showLessBtn && (
-                <button
-                  className="mt-2 bg-gray-500 hover:bg-gray-700 text-white font-bold py-1 px-3 rounded text-sm"
-                  onClick={() => setShowAll(false)}
-                >
-                  {t('less')}
-                </button>
-              )}
-            </div>
+          <div className="stats-block">
+            <h3 className="stats-block-title">{title}</h3>
+            {data.length === 0 ? (
+              <div className="stats-empty">{t('noData')}</div>
+            ) : (
+              <>
+                <div className="stats-block-grid">
+                  <div>
+                    <div className="stats-table-wrap">
+                      <table className="responsive-table w-full text-left border-collapse border border-gray-300 pie-table">
+                        <thead>
+                          <tr className="bg-gray-100">
+                            <th className="border border-gray-300 font-bold">{t('stt')}</th>
+                            <th className="border border-gray-300 font-bold">{t('name')}</th>
+                            <th className="border border-gray-300 font-bold">{t('flights')}</th>
+                            <th className="border border-gray-300 font-bold italic">{t('percentage')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {tableRows.map((item, index) => {
+                            if (item.placeholder) {
+                              return (
+                                <tr key={`${key}-placeholder-${index}`} className="border-t border-gray-300">
+                                  <td className="border border-gray-300 text-gray-300">{item.stt}</td>
+                                  <td className="border border-gray-300 text-gray-200">&nbsp;</td>
+                                  <td className="border border-gray-300 text-gray-200">&nbsp;</td>
+                                  <td className="border border-gray-300 text-gray-200">&nbsp;</td>
+                                </tr>
+                              );
+                            }
+                            const percentage = item.percentageText !== undefined && item.percentageText !== ''
+                              ? item.percentageText
+                              : (total > 0 ? Math.round((item.value / total) * 100) : 0);
+                            const avg = typeof item.value === 'number' && numDays > 1 ? Math.round(item.value / numDays) : 0;
+                            return (
+                              <tr key={`${key}-${index}`} className="border-t border-gray-300">
+                                <td className="border border-gray-300 font-semibold text-gray-700">{item.stt || index + 1}</td>
+                                <td className={`border border-gray-300 font-bold ${item.name === 'Others' ? 'text-slate-500' : 'text-blue-600'}`}>{item.name}</td>
+                                <td className="border border-gray-300 font-semibold">
+                                  {item.value}
+                                  {typeof item.value === 'number' && numDays > 1 && avg >= 1 && <span className="text-sm text-gray-500 font-normal"> (≈ {avg} {avgText})</span>}
+                                </td>
+                                <td className={`border border-gray-300 italic ${item.name === 'Others' ? 'text-slate-500' : 'text-green-600'}`}>{percentage === '' ? '' : `${percentage}%`}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {(showMoreBtn || showLessBtn) && (
+                      <div className="mt-2 flex gap-2">
+                        {showMoreBtn && (
+                          <button
+                            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm"
+                            onClick={() => setShowAll(true)}
+                          >
+                            {t('more')}
+                          </button>
+                        )}
+                        {showLessBtn && (
+                          <button
+                            className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-1 px-3 rounded text-sm"
+                            onClick={() => setShowAll(false)}
+                          >
+                            {t('less')}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="stats-chart-wrap">
+                    <ResponsiveContainer width="100%" height={chartHeight}>
+                      <PieChart>
+                        <Pie
+                          data={displayData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={outerRadius}
+                          innerRadius={innerRadius}
+                          label={customLabel}
+                          labelLine={false}
+                        >
+                          {displayData.map((entry, index) => (
+                            <Cell key={`chart-${key}-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip className="custom-tooltip" />
+                        <Legend className="custom-legend" />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         );
       };
@@ -1430,7 +1461,6 @@ margin-bottom:16px;
       const byAirline = aggregateData(filteredData, 'airline', startDate, endDate);
       const byCity = aggregateData(filteredData, 'city', startDate, endDate);
       const charterCountries = aggregateCharterCountries(filteredData, startDate, endDate);
-      const charterFlights = getCharterFlights();
 
       const topDomesticData = aggregateData(filteredData.filter(r => r.isDomestic), 'city', startDate, endDate);
       const topIntlCities = aggregateData(filteredData.filter(r => r.isInternational), 'city', startDate, endDate);
@@ -1449,19 +1479,6 @@ margin-bottom:16px;
         const day = date.getDate().toString().padStart(2, '0');
         return `${year}-${month}-${day}`;
       };
-
-      const displayedCharterFlights = showAllCis ? charterFlights : charterFlights.slice(0, 5);
-
-      const charterDetailHeaders = [t('stt'), t('dateHeader'), t('airlineHeader'), t('cityHeader'), t('countryHeader'), t('timeHeader'), t('flightNoHeader')];
-      const charterDetailRows = displayedCharterFlights.map((row, index) => [
-        index + 1,
-        formatDate(row.date),
-        <strong>{row.airline}</strong>,
-        <strong>{row.city}</strong>,
-        <strong>{row.country}</strong>,
-        row.time,
-        row.flightNo
-      ]);
 
       return (
         <div className="space-y-8">
@@ -1521,42 +1538,13 @@ margin-bottom:16px;
             </div>
           )}
 
-          <div className="bg-white p-4 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold mb-2">{t('overviewTitle')}</h2>
-            <p className="mb-4 text-xs text-gray-600">Tóm tắt nhanh xu hướng chuyến bay, cơ cấu nội địa/quốc tế và nguồn charter quốc tế trong giai đoạn đã chọn.</p>
-            {renderInfographic()}
+          {renderInfographic()}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-              {renderPieChart(domesticInternational, t('pie1'), 'domesticInternational')}
-              {renderPieChart(byCountry, t('pie2'), 'country')}
-              {renderPieChart(byAirline, t('pie3'), 'airline')}
-              {renderPieChart(byCity, t('pie4'), 'city')}
-            </div>
-
-            <h3 className="text-lg font-semibold mb-2 mt-6">{t('cisDetailTitle')}</h3>
-            {charterFlights.length > 0 ? (
-              <>
-                {renderAnimatedTable(charterDetailRows, charterDetailHeaders)}
-                {charterFlights.length > 5 && !showAllCis && (
-                  <button
-                    className="mt-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm"
-                    onClick={() => setShowAllCis(true)}
-                  >
-                    {t('more')}
-                  </button>
-                )}
-                {showAllCis && (
-                  <button
-                    className="mt-2 bg-gray-500 hover:bg-gray-700 text-white font-bold py-1 px-3 rounded text-sm"
-                    onClick={() => setShowAllCis(false)}
-                  >
-                    {t('less')}
-                  </button>
-                )}
-              </>
-            ) : (
-              <p className="text-sm text-gray-600">{t('noData')}</p>
-            )}
+          <div className="space-y-6">
+            {renderStatsBlock(byCountry, t('pie2'), 'country')}
+            {renderStatsBlock(byCity, t('pie4'), 'city')}
+            {renderStatsBlock(byAirline, t('pie3'), 'airline')}
+            {renderStatsBlock(charterCountries, t('pie5'), 'charter')}
           </div>
 
           <footer className="text-center text-xs text-gray-500 mt-8 pt-4">
