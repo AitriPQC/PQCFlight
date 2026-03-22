@@ -654,7 +654,32 @@ margin-bottom:16px;
       margin:0 0 10px 0;
     }
 
-</style>
+
+      .insight-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:16px;margin-top:14px;}
+      .insight-card{background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);border:1px solid #e2e8f0;border-radius:18px;padding:14px 16px;box-shadow:0 8px 20px rgba(15,23,42,0.05);}
+      .insight-title{font-size:15px;font-weight:800;color:#0f172a;margin-bottom:10px;}
+      .movers-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+      .mover-col{background:#fff;border:1px solid #edf2f7;border-radius:14px;padding:10px 12px;}
+      .mover-col-title{font-size:12px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+      .mover-up{color:#15803d;}
+      .mover-down{color:#b91c1c;}
+      .mover-list{display:flex;flex-direction:column;gap:8px;}
+      .mover-item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:8px;border-bottom:1px dashed #e2e8f0;}
+      .mover-item:last-child{border-bottom:none;padding-bottom:0;}
+      .mover-name{font-size:13px;font-weight:700;color:#0f172a;}
+      .mover-meta{font-size:11px;color:#64748b;margin-top:2px;}
+      .mover-value{font-size:13px;font-weight:800;white-space:nowrap;}
+      .alert-list{display:flex;flex-direction:column;gap:10px;}
+      .alert-item{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:14px;border:1px solid #e2e8f0;background:#fff;}
+      .alert-badge{font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px;line-height:1;white-space:nowrap;}
+      .alert-badge.warn{background:#fff7ed;color:#c2410c;border:1px solid #fdba74;}
+      .alert-badge.good{background:#f0fdf4;color:#15803d;border:1px solid #86efac;}
+      .alert-main{font-size:13px;font-weight:700;color:#0f172a;}
+      .alert-sub{font-size:11px;color:#64748b;margin-top:2px;}
+      .mini-note{font-size:11px;color:#64748b;margin-top:8px;}
+      @media (max-width: 980px){.insight-grid{grid-template-columns:1fr;}.movers-grid{grid-template-columns:1fr;}}
+
+  </style>
 </head>
 <body class="bg-gray-100 font-sans">
   <!-- Password Form -->
@@ -714,6 +739,7 @@ margin-bottom:16px;
     const { PieChart, Pie, Tooltip, Legend, Cell, ResponsiveContainer, LineChart, Line, Area, XAxis, YAxis, CartesianGrid, Label } = Recharts;
 
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A28EFF', '#FF4D4F', '#4CAF50', '#FF6F61', '#6B7280', '#AB47BC', '#F97316', '#10B981'];
+    const TREND_WINDOW = 10;
 
     const parseDate = (dateStr) => {
       return new Date(dateStr);
@@ -745,6 +771,19 @@ margin-bottom:16px;
       }
       return countryStr.trim();
     };
+
+    const getCountryFlag = (country) => {
+      const map = {
+        'South Korea': '🇰🇷', 'Korea': '🇰🇷', 'North Korea': '🇰🇵', 'China': '🇨🇳', 'Hong Kong': '🇭🇰',
+        'Thailand': '🇹🇭', 'Vietnam': '🇻🇳', 'Kazakhstan': '🇰🇿', 'Russia': '🇷🇺', 'Uzbekistan': '🇺🇿',
+        'Poland': '🇵🇱', 'Kyrgyzstan': '🇰🇬', 'Mongolia': '🇲🇳', 'Malaysia': '🇲🇾', 'Singapore': '🇸🇬',
+        'Taiwan': '🇹🇼', 'Japan': '🇯🇵', 'India': '🇮🇳', 'Czech Republic': '🇨🇿', 'Slovakia': '🇸🇰',
+        'Belarus': '🇧🇾', 'Ukraine': '🇺🇦', 'United Arab Emirates': '🇦🇪', 'Laos': '🇱🇦', 'Cambodia': '🇰🇭'
+      };
+      return map[country] || '🌐';
+    };
+
+    const withCountryFlag = (country) => `${getCountryFlag(country)} ${country}`;
 
     const processAndCleanData = (data) => {
       return data
@@ -883,6 +922,56 @@ margin-bottom:16px;
         internationalFlights: internationalCounts[date] || 0
       }));
     };
+
+    const getTrailingWindow = (endDate, days) => {
+      const end = new Date(endDate);
+      end.setHours(23,59,59,999);
+      const start = new Date(end);
+      start.setDate(end.getDate() - (days - 1));
+      start.setHours(0,0,0,0);
+      return { start, end };
+    };
+
+    const getPreviousWindow = (currentStart, days) => {
+      const end = new Date(currentStart);
+      end.setDate(end.getDate() - 1);
+      end.setHours(23,59,59,999);
+      const start = new Date(end);
+      start.setDate(end.getDate() - (days - 1));
+      start.setHours(0,0,0,0);
+      return { start, end };
+    };
+
+    const aggregateWindowCounts = (rows, groupBy, startDate, endDate, filterFn = null) => {
+      const counts = {};
+      rows.forEach(row => {
+        if (filterFn && !filterFn(row)) return;
+        if (row.date < startDate || row.date > endDate) return;
+        const key = row[groupBy];
+        if (!key) return;
+        counts[key] = (counts[key] || 0) + 1;
+      });
+      return counts;
+    };
+
+    const getWindowMovers = (rows, groupBy, endDate, filterFn = null, minTotal = 5) => {
+      const current = getTrailingWindow(endDate, 7);
+      const previous = getPreviousWindow(current.start, 7);
+      const currentCounts = aggregateWindowCounts(rows, groupBy, current.start, current.end, filterFn);
+      const previousCounts = aggregateWindowCounts(rows, groupBy, previous.start, previous.end, filterFn);
+      const keys = new Set([...Object.keys(currentCounts), ...Object.keys(previousCounts)]);
+      const results = Array.from(keys).map(name => {
+        const currentValue = currentCounts[name] || 0;
+        const previousValue = previousCounts[name] || 0;
+        const delta = currentValue - previousValue;
+        const pct = previousValue === 0 ? (currentValue > 0 ? 1 : 0) : delta / previousValue;
+        return { name, currentValue, previousValue, delta, pct, total: currentValue + previousValue };
+      }).filter(item => item.total >= minTotal);
+
+      const up = [...results].filter(item => item.delta > 0).sort((a,b) => (b.delta - a.delta) || (b.pct - a.pct) || (b.currentValue - a.currentValue)).slice(0,3);
+      const down = [...results].filter(item => item.delta < 0).sort((a,b) => (a.delta - b.delta) || (a.pct - b.pct) || (b.previousValue - a.previousValue)).slice(0,3);
+      return { up, down, current, previous };
+    };
     const App = () => {
       const today = new Date(); // Default to today: 27/10/2025
       const [data, setData] = useState([]);
@@ -934,7 +1023,17 @@ margin-bottom:16px;
           toDate: 'Đến ngày',
           timeline: 'Xu hướng chuyến bay đến Phú Quốc | {start} → {end}',
           noDataOverview: 'Không có số liệu chuyến bay cho giai đoạn đó.',
-          category1: 'Chuyến bay đến Phú Quốc'
+          category1: 'Chuyến bay đến Phú Quốc',
+          moversTitle: 'Biến động 7 ngày gần nhất',
+          moversUp: 'Top tăng',
+          moversDown: 'Top giảm',
+          alertsTitle: 'Cảnh báo nhanh',
+          alertWarn: 'Cần chú ý',
+          alertGood: 'Điểm sáng',
+          noMover: 'Chưa có biến động đủ lớn.',
+          latest7: '7 ngày gần nhất',
+          prev7: '7 ngày trước',
+          noteMover: 'So sánh 7 ngày gần nhất với 7 ngày liền trước để nhận diện thay đổi nhanh.'
         },
         en: {
           title: 'PHU QUOC INTERNATIONAL AIRPORT FLIGHT STATISTICS',
@@ -972,7 +1071,17 @@ margin-bottom:16px;
           toDate: 'To date',
           timeline: 'Flight trend to Phu Quoc | {start} → {end}',
           noDataOverview: 'No flight data for that period.',
-          category1: 'Flights to Phu Quoc'
+          category1: 'Flights to Phu Quoc',
+          moversTitle: 'Latest 7-day movers',
+          moversUp: 'Top gainers',
+          moversDown: 'Top decliners',
+          alertsTitle: 'Quick alerts',
+          alertWarn: 'Watch',
+          alertGood: 'Highlight',
+          noMover: 'No material move yet.',
+          latest7: 'Latest 7 days',
+          prev7: 'Previous 7 days',
+          noteMover: 'Comparing the latest 7 days with the immediately previous 7 days.'
         }
       };
 
@@ -1076,15 +1185,16 @@ margin-bottom:16px;
         return { key: 'flat', arrow: '→', text: 'đi ngang', className: 'flat' };
       };
 
-      const getSeriesTrendFromFlights = (rows, key) => {
-        const last7 = rows.slice(-7);
-        const prev7 = rows.slice(-14, -7);
+      const getSeriesTrendFromFlights = (rows, key, windowSize = TREND_WINDOW) => {
+        const lastWindow = rows.slice(-windowSize);
+        const prevWindow = rows.slice(-(windowSize * 2), -windowSize);
         const avg = arr => arr.length ? arr.reduce((s, it) => s + (it[key] || 0), 0) / arr.length : 0;
-        const currentAvg = avg(last7);
-        const previousAvg = prev7.length ? avg(prev7) : currentAvg;
+        const currentAvg = avg(lastWindow);
+        const previousAvg = prevWindow.length ? avg(prevWindow) : currentAvg;
         return {
           currentAvg,
           previousAvg,
+          windowSize,
           ...getTrendMeta(currentAvg, previousAvg)
         };
       };
@@ -1104,8 +1214,8 @@ margin-bottom:16px;
         const avgCharterPerDay = numDays > 0 ? Math.round(charterValue / numDays) : 0;
 
         const flightsByDate = aggregateFlightsByDate(filteredData, startDate, endDate);
-        const totalTrend = getSeriesTrendFromFlights(flightsByDate, 'totalFlights');
-        const trendText = `MA7 ${totalTrend.text}`;
+        const totalTrend = getSeriesTrendFromFlights(flightsByDate, 'totalFlights', TREND_WINDOW);
+        const trendText = `MA${TREND_WINDOW} ${totalTrend.text}`;
         const trendClass = `master-trend-${totalTrend.className}`;
         const trendArrow = totalTrend.arrow;
 
@@ -1126,7 +1236,7 @@ margin-bottom:16px;
             <div className="kpi-strip-top">
               <div className="kpi-strip-note">
                 <span className={`master-trend-pill ${trendClass}`}>{trendArrow} {trendText}</span>
-                <span className="kpi-strip-text">MA7 hiện tại ≈ {Math.round(totalTrend.currentAvg)} chuyến/ngày; 7 ngày trước ≈ {Math.round(totalTrend.previousAvg)} chuyến/ngày</span>
+                <span className="kpi-strip-text">MA{TREND_WINDOW} hiện tại ≈ {Math.round(totalTrend.currentAvg)} chuyến/ngày; {TREND_WINDOW} ngày trước ≈ {Math.round(totalTrend.previousAvg)} chuyến/ngày</span>
               </div>
               <div className="master-chip">{formatNumber(totalFlights)} chuyến | {numDays} ngày</div>
             </div>
@@ -1162,6 +1272,199 @@ margin-bottom:16px;
                 <div className="master-kpi-meta">{lowDay ? `${fmtDate(lowDay.date)} | ≈ ${lowDay.totalFlights} chuyến` : '-'}</div>
               </div>
             </div>
+          </div>
+        );
+      };
+
+      const renderInsightLite = () => {
+        if (numDays < 14) return null;
+
+        const intlMovers = getWindowMovers(filteredData, 'country', endDate, row => row.isInternational && row.country !== 'Vietnam', 5);
+        const cityMovers = getWindowMovers(filteredData, 'city', endDate, null, 6);
+        const charterMovers = getWindowMovers(filteredData, 'country', endDate, row => row.isCharter, 4);
+
+        const labelMap = {
+          country: { icon: '🌐', vi: 'Quốc gia', en: 'Country' },
+          city: { icon: '📍', vi: 'Thành phố', en: 'City' },
+          charter: { icon: '✈', vi: 'Charter', en: 'Charter' }
+        };
+
+        const displayName = (item, groupKey) => {
+          if (groupKey === 'country' || groupKey === 'charter') return withCountryFlag(item.name);
+          return item.name;
+        };
+
+        const groupOrderMap = { country: 1, city: 2, charter: 3 };
+        const tagItem = (item, groupKey) => ({
+          ...item,
+          name: displayName(item, groupKey),
+          groupKey,
+          groupOrder: groupOrderMap[groupKey],
+          source: `${groupKey === 'country' || groupKey === 'charter' ? getCountryFlag(item.name) + ' ' : labelMap[groupKey].icon + ' '}${language === 'vi' ? labelMap[groupKey].vi : labelMap[groupKey].en}`
+        });
+
+        const combineByPriority = (collections) => collections.flatMap(({ key, items }) => items.map(item => tagItem(item, key))).slice(0, 3);
+
+        const combineUp = combineByPriority([
+          { key: 'country', items: intlMovers.up },
+          { key: 'city', items: cityMovers.up },
+          { key: 'charter', items: charterMovers.up }
+        ]);
+
+        const combineDown = combineByPriority([
+          { key: 'country', items: intlMovers.down },
+          { key: 'city', items: cityMovers.down },
+          { key: 'charter', items: charterMovers.down }
+        ]);
+
+        const warnAlerts = [];
+        const goodAlerts = [];
+        const maybePush = (bucket, kind, badgeClass, main, sub, score, groupKey) => bucket.push({ kind, badgeClass, main, sub, score, groupOrder: groupOrderMap[groupKey] });
+        const sortAlertBucket = (bucket) => bucket.sort((a, b) => a.groupOrder - b.groupOrder || b.score - a.score);
+        const groupLabel = (groupKey, countryName = '') => {
+          if (groupKey === 'country') return `${getCountryFlag(countryName)} ${language === 'vi' ? labelMap[groupKey].vi : labelMap[groupKey].en}`;
+          if (groupKey === 'charter') return `${getCountryFlag(countryName)} ${language === 'vi' ? labelMap[groupKey].vi : labelMap[groupKey].en}`;
+          return `${labelMap[groupKey].icon} ${language === 'vi' ? labelMap[groupKey].vi : labelMap[groupKey].en}`;
+        };
+
+        const biggestIntlDrop = intlMovers.down[0];
+        if (biggestIntlDrop && (Math.abs(biggestIntlDrop.pct) >= 0.12 || Math.abs(biggestIntlDrop.delta) >= 4)) {
+          maybePush(warnAlerts, t('alertWarn'), 'warn', `${withCountryFlag(biggestIntlDrop.name)} giảm mạnh ${Math.abs(Math.round(biggestIntlDrop.pct*100))}%`, `${t('latest7')}: ${biggestIntlDrop.currentValue} | ${t('prev7')}: ${biggestIntlDrop.previousValue} • Nhóm: ${groupLabel('country', biggestIntlDrop.name)}`, Math.abs(biggestIntlDrop.delta) + Math.abs(biggestIntlDrop.pct*100), 'country');
+        }
+
+        const biggestCityDrop = cityMovers.down[0];
+        if (biggestCityDrop && (Math.abs(biggestCityDrop.pct) >= 0.12 || Math.abs(biggestCityDrop.delta) >= 5)) {
+          maybePush(warnAlerts, t('alertWarn'), 'warn', `${biggestCityDrop.name} giảm ${Math.abs(Math.round(biggestCityDrop.pct*100))}%`, `${t('latest7')}: ${biggestCityDrop.currentValue} | ${t('prev7')}: ${biggestCityDrop.previousValue} • Nhóm: ${groupLabel('city')}`, Math.abs(biggestCityDrop.delta) + Math.abs(biggestCityDrop.pct*100), 'city');
+        }
+
+        const biggestCharterDrop = charterMovers.down[0];
+        if (biggestCharterDrop && (Math.abs(biggestCharterDrop.pct) >= 0.15 || Math.abs(biggestCharterDrop.delta) >= 2)) {
+          maybePush(warnAlerts, t('alertWarn'), 'warn', `Charter ${withCountryFlag(biggestCharterDrop.name)} giảm ${Math.abs(Math.round(biggestCharterDrop.pct*100))}%`, `${t('latest7')}: ${biggestCharterDrop.currentValue} | ${t('prev7')}: ${biggestCharterDrop.previousValue} • Nhóm: ${groupLabel('charter', biggestCharterDrop.name)}`, Math.abs(biggestCharterDrop.delta) + Math.abs(biggestCharterDrop.pct*100), 'charter');
+        }
+
+        const bestIntlUp = intlMovers.up[0];
+        if (bestIntlUp && (bestIntlUp.pct >= 0.12 || bestIntlUp.delta >= 4)) {
+          maybePush(goodAlerts, t('alertGood'), 'good', `${withCountryFlag(bestIntlUp.name)} tăng ${Math.round(bestIntlUp.pct*100)}%`, `${t('latest7')}: ${bestIntlUp.currentValue} | ${t('prev7')}: ${bestIntlUp.previousValue} • Nhóm: ${groupLabel('country', bestIntlUp.name)}`, Math.abs(bestIntlUp.delta) + Math.abs(bestIntlUp.pct*100), 'country');
+        }
+
+        const bestCityUp = cityMovers.up[0];
+        if (bestCityUp && (bestCityUp.pct >= 0.12 || bestCityUp.delta >= 5)) {
+          maybePush(goodAlerts, t('alertGood'), 'good', `${bestCityUp.name} tăng ${Math.round(bestCityUp.pct*100)}%`, `${t('latest7')}: ${bestCityUp.currentValue} | ${t('prev7')}: ${bestCityUp.previousValue} • Nhóm: ${groupLabel('city')}`, Math.abs(bestCityUp.delta) + Math.abs(bestCityUp.pct*100), 'city');
+        }
+
+        const bestCharterUp = charterMovers.up[0];
+        if (bestCharterUp && (bestCharterUp.pct >= 0.15 || bestCharterUp.delta >= 2)) {
+          maybePush(goodAlerts, t('alertGood'), 'good', `Charter ${withCountryFlag(bestCharterUp.name)} tăng ${Math.round(bestCharterUp.pct*100)}%`, `${t('latest7')}: ${bestCharterUp.currentValue} | ${t('prev7')}: ${bestCharterUp.previousValue} • Nhóm: ${groupLabel('charter', bestCharterUp.name)}`, Math.abs(bestCharterUp.delta) + Math.abs(bestCharterUp.pct*100), 'charter');
+        }
+
+        const alerts = [...sortAlertBucket(warnAlerts), ...sortAlertBucket(goodAlerts)].slice(0, 4);
+
+        const renderMoverList = (items, type='up') => {
+          if (!items.length) return <div className="mini-note">{t('noMover')}</div>;
+          return (
+            <div className="mover-list">
+              {items.map((item, idx) => (
+                <div className="mover-item" key={`${type}-${idx}-${item.name}`}>
+                  <div>
+                    <div className="mover-name">{item.name}</div>
+                    <div className="mover-meta">{item.source} • {t('latest7')}: {item.currentValue} | {t('prev7')}: {item.previousValue}</div>
+                  </div>
+                  <div className={`mover-value ${type === 'up' ? 'mover-up' : 'mover-down'}`}>
+                    {type === 'up' ? '+' : ''}{item.delta} ({type === 'up' ? '+' : ''}{Math.round(item.pct*100)}%)
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        };
+
+        return (
+          <div className="insight-grid">
+            <div className="insight-card">
+              <div className="insight-title">{t('moversTitle')}</div>
+              <div className="movers-grid">
+                <div className="mover-col">
+                  <div className="mover-col-title mover-up">▲ {t('moversUp')}</div>
+                  {renderMoverList(combineUp, 'up')}
+                </div>
+                <div className="mover-col">
+                  <div className="mover-col-title mover-down">▼ {t('moversDown')}</div>
+                  {renderMoverList(combineDown, 'down')}
+                </div>
+              </div>
+              <div className="mini-note">{t('noteMover')}</div>
+            </div>
+
+            <div className="insight-card">
+              <div className="insight-title">{t('alertsTitle')}</div>
+              <div className="alert-list">
+                {alerts.length ? alerts.map((alert, idx) => (
+                  <div className="alert-item" key={`alert-${idx}`}>
+                    <span className={`alert-badge ${alert.badgeClass}`}>{alert.kind}</span>
+                    <div>
+                      <div className="alert-main">{alert.main}</div>
+                      <div className="alert-sub">{alert.sub}</div>
+                    </div>
+                  </div>
+                )) : <div className="mini-note">{t('noMover')}</div>}
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+
+      const renderCharterFlightList = (rows) => {
+        const charterRows = rows
+          .filter(row => row.isCharter && row.isInternational && row.date >= startDate && row.date <= endDate)
+          .sort((a, b) => {
+            const dateDiff = b.date - a.date;
+            if (dateDiff !== 0) return dateDiff;
+            return parseTimeToFraction(a.time) - parseTimeToFraction(b.time);
+          });
+
+        if (!charterRows.length) return null;
+
+        const displayRows = showAllCis ? charterRows : charterRows.slice(0, 5);
+
+        return (
+          <div className="stats-block">
+            <div className="stats-block-header">
+              <h3 className="stats-block-title">5. {t('cisDetailTitle')}</h3>
+            </div>
+            <div className="table-container">
+              <table className="responsive-table w-full text-left border-collapse border border-gray-300 text-sm">
+                <thead>
+                  <tr className="bg-gray-200">
+                    <th className="border border-gray-300 font-bold">{t('sttHeader')}</th>
+                    <th className="border border-gray-300 font-bold">{t('dateHeader')}</th>
+                    <th className="border border-gray-300 font-bold">{t('airlineHeader')}</th>
+                    <th className="border border-gray-300 font-bold">{t('cityHeader')}</th>
+                    <th className="border border-gray-300 font-bold">{t('countryHeader')}</th>
+                    <th className="border border-gray-300 font-bold">{t('timeHeader')}</th>
+                    <th className="border border-gray-300 font-bold">{t('flightNoHeader')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayRows.map((row, idx) => (
+                    <tr key={`charter-row-${idx}`} className="animate-row border-t border-gray-300">
+                      <td className="border border-gray-300 text-gray-800">{idx + 1}</td>
+                      <td className="border border-gray-300 text-gray-800">{formatDate(row.date)}</td>
+                      <td className="border border-gray-300 text-gray-800">{row.airline}</td>
+                      <td className="border border-gray-300 text-gray-800">{row.city}</td>
+                      <td className="border border-gray-300 text-gray-800">{withCountryFlag(row.country)}</td>
+                      <td className="border border-gray-300 text-gray-800">{row.time}</td>
+                      <td className="border border-gray-300 text-gray-800">{row.flightNo}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {charterRows.length > 5 && (
+              <button className="more-btn" onClick={() => setShowAllCis(!showAllCis)}>
+                {showAllCis ? t('less') : t('more')}
+              </button>
+            )}
           </div>
         );
       };
@@ -1323,12 +1626,12 @@ margin-bottom:16px;
 
       const renderLineChart = (data, title) => {
         const enrichedData = data.map((item, index, arr) => {
-          const ma7Window = arr.slice(Math.max(0, index - 6), index + 1);
-          const ma7 = ma7Window.reduce((sum, d) => sum + d.totalFlights, 0) / ma7Window.length;
+          const trendWindow = arr.slice(Math.max(0, index - (TREND_WINDOW - 1)), index + 1);
+          const ma10 = trendWindow.reduce((sum, d) => sum + d.totalFlights, 0) / trendWindow.length;
 
           return {
             ...item,
-            ma7: Math.round(ma7 * 10) / 10
+            ma10: Math.round(ma10 * 10) / 10
           };
         });
 
@@ -1368,9 +1671,9 @@ margin-bottom:16px;
           <div className="chart-premium-card">
             <h3 className="chart-premium-title">{title}</h3>
                         {(() => {
-              const totalTrend = getSeriesTrendFromFlights(enrichedData, 'totalFlights');
-              const domesticTrend = getSeriesTrendFromFlights(enrichedData, 'domesticFlights');
-              const intlTrend = getSeriesTrendFromFlights(enrichedData, 'internationalFlights');
+              const totalTrend = getSeriesTrendFromFlights(enrichedData, 'totalFlights', TREND_WINDOW);
+              const domesticTrend = getSeriesTrendFromFlights(enrichedData, 'domesticFlights', TREND_WINDOW);
+              const intlTrend = getSeriesTrendFromFlights(enrichedData, 'internationalFlights', TREND_WINDOW);
 
               return (
                 <>
@@ -1381,7 +1684,7 @@ margin-bottom:16px;
                   </div>
 
                   <div className="chart-ma7-note">
-                    MA7 hiện tại ≈ {Math.round(totalTrend.currentAvg)} chuyến/ngày; 7 ngày trước ≈ {Math.round(totalTrend.previousAvg)} chuyến/ngày
+                    MA{TREND_WINDOW} hiện tại ≈ {Math.round(totalTrend.currentAvg)} chuyến/ngày; {TREND_WINDOW} ngày trước ≈ {Math.round(totalTrend.previousAvg)} chuyến/ngày
                   </div>
                 </>
               );
@@ -1414,9 +1717,9 @@ margin-bottom:16px;
                     const { x, y, value, index } = props;
                     const dataLength = enrichedData.length;
 
-                    if (index < dataLength - 14) return null;
+                    if (index < dataLength - 20) return null;
 
-                    const isRecent7 = index >= dataLength - 7;
+                    const isRecentWindow = index >= dataLength - TREND_WINDOW;
 
                     return (
                       <text
@@ -1425,14 +1728,14 @@ margin-bottom:16px;
                         textAnchor="middle"
                         fontSize="9"
                         fontWeight="700"
-                        fill={isRecent7 ? "#0f172a" : "#94a3b8"}
+                        fill={isRecentWindow ? "#0f172a" : "#94a3b8"}
                       >
                         {value}
                       </text>
                     );
                   }}
                 />
-                <Line type="monotone" dataKey="ma7" stroke="#ff6b8a" name="MA7" strokeWidth={2.5} strokeDasharray="6 6" dot={false} activeDot={{ r: 4, strokeWidth: 0, fill: '#ff6b8a' }} />
+                <Line type="monotone" dataKey="ma10" stroke="#ff6b8a" name={`MA${TREND_WINDOW}`} strokeWidth={2.5} strokeDasharray="6 6" dot={false} activeDot={{ r: 4, strokeWidth: 0, fill: '#ff6b8a' }} />
                                 <Line type="monotone" dataKey="domesticFlights" stroke="#10b981" name="Nội địa" strokeWidth={1.8} strokeOpacity={0.95} dot={false} activeDot={{ r: 4, strokeWidth: 0, fill: '#10b981' }} />
                 <Line type="monotone" dataKey="internationalFlights" stroke="#f59e0b" name="Quốc tế" strokeWidth={1.8} strokeOpacity={0.95} dot={false} activeDot={{ r: 4, strokeWidth: 0, fill: '#f59e0b' }} />
               </LineChart>
@@ -1539,12 +1842,14 @@ margin-bottom:16px;
           )}
 
           {renderInfographic()}
+          {renderInsightLite()}
 
           <div className="space-y-6">
             {renderStatsBlock(byCountry, t('pie2'), 'country')}
             {renderStatsBlock(byCity, t('pie4'), 'city')}
             {renderStatsBlock(byAirline, t('pie3'), 'airline')}
             {renderStatsBlock(charterCountries, t('pie5'), 'charter')}
+            {renderCharterFlightList(filteredData)}
           </div>
 
           <footer className="text-center text-xs text-gray-500 mt-8 pt-4">
