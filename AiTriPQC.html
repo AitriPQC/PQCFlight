@@ -655,8 +655,8 @@ margin-bottom:16px;
     }
 
 
-      .insight-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:16px;margin-top:14px;}
-      .insight-card{background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);border:1px solid #e2e8f0;border-radius:18px;padding:14px 16px;box-shadow:0 8px 20px rgba(15,23,42,0.05);}
+      .insight-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px;}
+      .insight-card{background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);border:1px solid #e2e8f0;border-radius:18px;padding:14px 16px;box-shadow:0 8px 20px rgba(15,23,42,0.05);min-height:100%;}
       .insight-title{font-size:15px;font-weight:800;color:#0f172a;margin-bottom:10px;}
       .movers-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
       .mover-col{background:#fff;border:1px solid #edf2f7;border-radius:14px;padding:10px 12px;}
@@ -670,6 +670,7 @@ margin-bottom:16px;
       .mover-meta{font-size:11px;color:#64748b;margin-top:2px;}
       .mover-value{font-size:13px;font-weight:800;white-space:nowrap;}
       .alert-list{display:flex;flex-direction:column;gap:10px;}
+      .alert-col-title{font-size:14px;font-weight:800;margin:0 0 10px 0;color:#0f172a;}
       .alert-item{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:14px;border:1px solid #e2e8f0;background:#fff;}
       .alert-badge{font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px;line-height:1;white-space:nowrap;}
       .alert-badge.warn{background:#fff7ed;color:#c2410c;border:1px solid #fdba74;}
@@ -679,7 +680,15 @@ margin-bottom:16px;
       .mini-note{font-size:11px;color:#64748b;margin-top:8px;}
       @media (max-width: 980px){.insight-grid{grid-template-columns:1fr;}.movers-grid{grid-template-columns:1fr;}}
 
-  </style>
+  
+    .insight-shell{background:#fff;border:1px solid #dbe4f0;border-radius:26px;padding:26px 28px;box-shadow:0 10px 30px rgba(15,23,42,.05);}
+    .insight-shell-title{font-size:22px;font-weight:900;color:#0f172a;margin-bottom:18px;}
+    .insight-grid-single{gap:0;}
+    .insight-card-compact{border:none;box-shadow:none;background:transparent;padding:0 20px 0 0;}
+    .insight-col-divider{border-left:1px dashed #dbe4f0;padding-left:24px;padding-right:0;}
+    @media (max-width: 900px){.insight-shell{padding:20px 18px}.insight-card-compact{padding-right:0}.insight-col-divider{border-left:none;padding-left:0;border-top:1px dashed #dbe4f0;padding-top:16px;margin-top:16px}}
+
+</style>
 </head>
 <body class="bg-gray-100 font-sans">
   <!-- Password Form -->
@@ -954,9 +963,16 @@ margin-bottom:16px;
       return counts;
     };
 
-    const getWindowMovers = (rows, groupBy, endDate, filterFn = null, minTotal = 5) => {
-      const current = getTrailingWindow(endDate, 7);
-      const previous = getPreviousWindow(current.start, 7);
+    const getWindowMovers = (rows, groupBy, endDate, filterFn = null, options = {}) => {
+      const settings = {
+        minPresence: 10,
+        minAbsDelta: 3,
+        minPct: 0.10,
+        limit: 3,
+        ...options
+      };
+      const current = getTrailingWindow(endDate, TREND_WINDOW);
+      const previous = getPreviousWindow(current.start, TREND_WINDOW);
       const currentCounts = aggregateWindowCounts(rows, groupBy, current.start, current.end, filterFn);
       const previousCounts = aggregateWindowCounts(rows, groupBy, previous.start, previous.end, filterFn);
       const keys = new Set([...Object.keys(currentCounts), ...Object.keys(previousCounts)]);
@@ -964,13 +980,14 @@ margin-bottom:16px;
         const currentValue = currentCounts[name] || 0;
         const previousValue = previousCounts[name] || 0;
         const delta = currentValue - previousValue;
-        const pct = previousValue === 0 ? (currentValue > 0 ? 1 : 0) : delta / previousValue;
-        return { name, currentValue, previousValue, delta, pct, total: currentValue + previousValue };
-      }).filter(item => item.total >= minTotal);
+        const pct = previousValue === 0 ? (currentValue >= settings.minPresence ? 1 : 0) : delta / previousValue;
+        const maxWindowValue = Math.max(currentValue, previousValue);
+        return { name, currentValue, previousValue, delta, pct, total: currentValue + previousValue, maxWindowValue };
+      }).filter(item => item.maxWindowValue >= settings.minPresence && Math.abs(item.delta) >= settings.minAbsDelta && Math.abs(item.pct) >= settings.minPct);
 
-      const up = [...results].filter(item => item.delta > 0).sort((a,b) => (b.delta - a.delta) || (b.pct - a.pct) || (b.currentValue - a.currentValue)).slice(0,3);
-      const down = [...results].filter(item => item.delta < 0).sort((a,b) => (a.delta - b.delta) || (a.pct - b.pct) || (b.previousValue - a.previousValue)).slice(0,3);
-      return { up, down, current, previous };
+      const up = [...results].filter(item => item.delta > 0).sort((a,b) => (b.delta - a.delta) || (b.pct - a.pct) || (b.currentValue - a.currentValue)).slice(0, settings.limit);
+      const down = [...results].filter(item => item.delta < 0).sort((a,b) => (a.delta - b.delta) || (a.pct - b.pct) || (b.previousValue - a.previousValue)).slice(0, settings.limit);
+      return { up, down, current, previous, settings };
     };
     const App = () => {
       const today = new Date(); // Default to today: 27/10/2025
@@ -1024,16 +1041,16 @@ margin-bottom:16px;
           timeline: 'Xu hướng chuyến bay đến Phú Quốc | {start} → {end}',
           noDataOverview: 'Không có số liệu chuyến bay cho giai đoạn đó.',
           category1: 'Chuyến bay đến Phú Quốc',
-          moversTitle: 'Biến động 7 ngày gần nhất',
+          moversTitle: 'Biến động 10 ngày gần nhất',
           moversUp: 'Top tăng',
           moversDown: 'Top giảm',
-          alertsTitle: 'Cảnh báo nhanh',
+          alertsTitle: 'Cơ hội & Rủi ro thị trường',
           alertWarn: 'Cần chú ý',
           alertGood: 'Điểm sáng',
           noMover: 'Chưa có biến động đủ lớn.',
-          latest7: '7 ngày gần nhất',
-          prev7: '7 ngày trước',
-          noteMover: 'So sánh 7 ngày gần nhất với 7 ngày liền trước để nhận diện thay đổi nhanh.'
+          latest7: '10 ngày gần nhất',
+          prev7: '10 ngày trước',
+          noteMover: 'So sánh 10 ngày gần nhất với 10 ngày liền trước để nhận diện thay đổi nhanh.'
         },
         en: {
           title: 'PHU QUOC INTERNATIONAL AIRPORT FLIGHT STATISTICS',
@@ -1072,16 +1089,16 @@ margin-bottom:16px;
           timeline: 'Flight trend to Phu Quoc | {start} → {end}',
           noDataOverview: 'No flight data for that period.',
           category1: 'Flights to Phu Quoc',
-          moversTitle: 'Latest 7-day movers',
+          moversTitle: 'Latest 10-day movers',
           moversUp: 'Top gainers',
           moversDown: 'Top decliners',
-          alertsTitle: 'Quick alerts',
+          alertsTitle: 'Market Opportunities & Risks',
           alertWarn: 'Watch',
           alertGood: 'Highlight',
           noMover: 'No material move yet.',
-          latest7: 'Latest 7 days',
-          prev7: 'Previous 7 days',
-          noteMover: 'Comparing the latest 7 days with the immediately previous 7 days.'
+          latest7: 'Latest 10 days',
+          prev7: 'Previous 10 days',
+          noteMover: 'Comparing the latest 10 days with the immediately previous 10 days.'
         }
       };
 
@@ -1279,9 +1296,10 @@ margin-bottom:16px;
       const renderInsightLite = () => {
         if (numDays < 14) return null;
 
-        const intlMovers = getWindowMovers(filteredData, 'country', endDate, row => row.isInternational && row.country !== 'Vietnam', 5);
-        const cityMovers = getWindowMovers(filteredData, 'city', endDate, null, 6);
-        const charterMovers = getWindowMovers(filteredData, 'country', endDate, row => row.isCharter, 4);
+        const smartFilter = { minPresence: 10, minAbsDelta: 3, minPct: 0.10, limit: 3 };
+        const intlMovers = getWindowMovers(filteredData, 'country', endDate, row => row.isInternational && row.country !== 'Vietnam', smartFilter);
+        const cityMovers = getWindowMovers(filteredData, 'city', endDate, null, smartFilter);
+        const charterMovers = getWindowMovers(filteredData, 'country', endDate, row => row.isCharter, smartFilter);
 
         const labelMap = {
           country: { icon: '🌐', vi: 'Quốc gia', en: 'Country' },
@@ -1303,23 +1321,46 @@ margin-bottom:16px;
           source: `${groupKey === 'country' || groupKey === 'charter' ? getCountryFlag(item.name) + ' ' : labelMap[groupKey].icon + ' '}${language === 'vi' ? labelMap[groupKey].vi : labelMap[groupKey].en}`
         });
 
+        const cityCountryMap = filteredData.reduce((acc, row) => {
+          if (row.city && !acc[row.city]) acc[row.city] = row.country;
+          return acc;
+        }, {});
+
+        const dedupeCharterAgainstCountry = (countryItems, charterItems) => {
+          const countryNames = new Set(countryItems.map(item => item.name));
+          return charterItems.filter(item => !countryNames.has(item.name));
+        };
+
+        const dedupeCityAgainstCountry = (countryItems, cityItems) => {
+          const countryNames = new Set(countryItems.map(item => item.name));
+          return cityItems.filter(item => {
+            const mappedCountry = cityCountryMap[item.name];
+            return !mappedCountry || !countryNames.has(mappedCountry);
+          });
+        };
+
+        const uniqueCityUp = dedupeCityAgainstCountry(intlMovers.up, cityMovers.up);
+        const uniqueCityDown = dedupeCityAgainstCountry(intlMovers.down, cityMovers.down);
+        const uniqueCharterUp = dedupeCharterAgainstCountry(intlMovers.up, charterMovers.up);
+        const uniqueCharterDown = dedupeCharterAgainstCountry(intlMovers.down, charterMovers.down);
+
         const combineByPriority = (collections) => collections.flatMap(({ key, items }) => items.map(item => tagItem(item, key))).slice(0, 3);
 
         const combineUp = combineByPriority([
           { key: 'country', items: intlMovers.up },
-          { key: 'city', items: cityMovers.up },
-          { key: 'charter', items: charterMovers.up }
+          { key: 'city', items: uniqueCityUp },
+          { key: 'charter', items: uniqueCharterUp }
         ]);
 
         const combineDown = combineByPriority([
           { key: 'country', items: intlMovers.down },
-          { key: 'city', items: cityMovers.down },
-          { key: 'charter', items: charterMovers.down }
+          { key: 'city', items: uniqueCityDown },
+          { key: 'charter', items: uniqueCharterDown }
         ]);
 
         const warnAlerts = [];
         const goodAlerts = [];
-        const maybePush = (bucket, kind, badgeClass, main, sub, score, groupKey) => bucket.push({ kind, badgeClass, main, sub, score, groupOrder: groupOrderMap[groupKey] });
+        const maybePush = (bucket, kind, badgeClass, main, sub, score, groupKey, dedupeKey = '') => bucket.push({ kind, badgeClass, main, sub, score, groupOrder: groupOrderMap[groupKey], dedupeKey });
         const sortAlertBucket = (bucket) => bucket.sort((a, b) => a.groupOrder - b.groupOrder || b.score - a.score);
         const groupLabel = (groupKey, countryName = '') => {
           if (groupKey === 'country') return `${getCountryFlag(countryName)} ${language === 'vi' ? labelMap[groupKey].vi : labelMap[groupKey].en}`;
@@ -1328,36 +1369,47 @@ margin-bottom:16px;
         };
 
         const biggestIntlDrop = intlMovers.down[0];
-        if (biggestIntlDrop && (Math.abs(biggestIntlDrop.pct) >= 0.12 || Math.abs(biggestIntlDrop.delta) >= 4)) {
-          maybePush(warnAlerts, t('alertWarn'), 'warn', `${withCountryFlag(biggestIntlDrop.name)} giảm mạnh ${Math.abs(Math.round(biggestIntlDrop.pct*100))}%`, `${t('latest7')}: ${biggestIntlDrop.currentValue} | ${t('prev7')}: ${biggestIntlDrop.previousValue} • Nhóm: ${groupLabel('country', biggestIntlDrop.name)}`, Math.abs(biggestIntlDrop.delta) + Math.abs(biggestIntlDrop.pct*100), 'country');
+        if (biggestIntlDrop) {
+          maybePush(warnAlerts, t('alertWarn'), 'warn', `${withCountryFlag(biggestIntlDrop.name)} giảm mạnh ${Math.abs(Math.round(biggestIntlDrop.pct*100))}%`, `${t('latest7')}: ${biggestIntlDrop.currentValue} | ${t('prev7')}: ${biggestIntlDrop.previousValue} • Nhóm: ${groupLabel('country', biggestIntlDrop.name)}`, Math.abs(biggestIntlDrop.delta) + Math.abs(biggestIntlDrop.pct*100), 'country', `drop:${biggestIntlDrop.name}`);
         }
 
-        const biggestCityDrop = cityMovers.down[0];
-        if (biggestCityDrop && (Math.abs(biggestCityDrop.pct) >= 0.12 || Math.abs(biggestCityDrop.delta) >= 5)) {
-          maybePush(warnAlerts, t('alertWarn'), 'warn', `${biggestCityDrop.name} giảm ${Math.abs(Math.round(biggestCityDrop.pct*100))}%`, `${t('latest7')}: ${biggestCityDrop.currentValue} | ${t('prev7')}: ${biggestCityDrop.previousValue} • Nhóm: ${groupLabel('city')}`, Math.abs(biggestCityDrop.delta) + Math.abs(biggestCityDrop.pct*100), 'city');
+        const biggestCityDrop = uniqueCityDown[0];
+        if (biggestCityDrop) {
+          maybePush(warnAlerts, t('alertWarn'), 'warn', `${biggestCityDrop.name} giảm ${Math.abs(Math.round(biggestCityDrop.pct*100))}%`, `${t('latest7')}: ${biggestCityDrop.currentValue} | ${t('prev7')}: ${biggestCityDrop.previousValue} • Nhóm: ${groupLabel('city')}`, Math.abs(biggestCityDrop.delta) + Math.abs(biggestCityDrop.pct*100), 'city', `drop-city:${biggestCityDrop.name}`);
         }
 
-        const biggestCharterDrop = charterMovers.down[0];
-        if (biggestCharterDrop && (Math.abs(biggestCharterDrop.pct) >= 0.15 || Math.abs(biggestCharterDrop.delta) >= 2)) {
-          maybePush(warnAlerts, t('alertWarn'), 'warn', `Charter ${withCountryFlag(biggestCharterDrop.name)} giảm ${Math.abs(Math.round(biggestCharterDrop.pct*100))}%`, `${t('latest7')}: ${biggestCharterDrop.currentValue} | ${t('prev7')}: ${biggestCharterDrop.previousValue} • Nhóm: ${groupLabel('charter', biggestCharterDrop.name)}`, Math.abs(biggestCharterDrop.delta) + Math.abs(biggestCharterDrop.pct*100), 'charter');
+        const biggestCharterDrop = uniqueCharterDown[0];
+        if (biggestCharterDrop) {
+          maybePush(warnAlerts, t('alertWarn'), 'warn', `Charter ${withCountryFlag(biggestCharterDrop.name)} giảm ${Math.abs(Math.round(biggestCharterDrop.pct*100))}%`, `${t('latest7')}: ${biggestCharterDrop.currentValue} | ${t('prev7')}: ${biggestCharterDrop.previousValue} • Nhóm: ${groupLabel('charter', biggestCharterDrop.name)}`, Math.abs(biggestCharterDrop.delta) + Math.abs(biggestCharterDrop.pct*100), 'charter', `drop:${biggestCharterDrop.name}`);
         }
 
         const bestIntlUp = intlMovers.up[0];
-        if (bestIntlUp && (bestIntlUp.pct >= 0.12 || bestIntlUp.delta >= 4)) {
-          maybePush(goodAlerts, t('alertGood'), 'good', `${withCountryFlag(bestIntlUp.name)} tăng ${Math.round(bestIntlUp.pct*100)}%`, `${t('latest7')}: ${bestIntlUp.currentValue} | ${t('prev7')}: ${bestIntlUp.previousValue} • Nhóm: ${groupLabel('country', bestIntlUp.name)}`, Math.abs(bestIntlUp.delta) + Math.abs(bestIntlUp.pct*100), 'country');
+        if (bestIntlUp) {
+          maybePush(goodAlerts, t('alertGood'), 'good', `${withCountryFlag(bestIntlUp.name)} tăng ${Math.round(bestIntlUp.pct*100)}%`, `${t('latest7')}: ${bestIntlUp.currentValue} | ${t('prev7')}: ${bestIntlUp.previousValue} • Nhóm: ${groupLabel('country', bestIntlUp.name)}`, Math.abs(bestIntlUp.delta) + Math.abs(bestIntlUp.pct*100), 'country', `up:${bestIntlUp.name}`);
         }
 
-        const bestCityUp = cityMovers.up[0];
-        if (bestCityUp && (bestCityUp.pct >= 0.12 || bestCityUp.delta >= 5)) {
-          maybePush(goodAlerts, t('alertGood'), 'good', `${bestCityUp.name} tăng ${Math.round(bestCityUp.pct*100)}%`, `${t('latest7')}: ${bestCityUp.currentValue} | ${t('prev7')}: ${bestCityUp.previousValue} • Nhóm: ${groupLabel('city')}`, Math.abs(bestCityUp.delta) + Math.abs(bestCityUp.pct*100), 'city');
+        const bestCityUp = uniqueCityUp[0];
+        if (bestCityUp) {
+          maybePush(goodAlerts, t('alertGood'), 'good', `${bestCityUp.name} tăng ${Math.round(bestCityUp.pct*100)}%`, `${t('latest7')}: ${bestCityUp.currentValue} | ${t('prev7')}: ${bestCityUp.previousValue} • Nhóm: ${groupLabel('city')}`, Math.abs(bestCityUp.delta) + Math.abs(bestCityUp.pct*100), 'city', `up-city:${bestCityUp.name}`);
         }
 
-        const bestCharterUp = charterMovers.up[0];
-        if (bestCharterUp && (bestCharterUp.pct >= 0.15 || bestCharterUp.delta >= 2)) {
-          maybePush(goodAlerts, t('alertGood'), 'good', `Charter ${withCountryFlag(bestCharterUp.name)} tăng ${Math.round(bestCharterUp.pct*100)}%`, `${t('latest7')}: ${bestCharterUp.currentValue} | ${t('prev7')}: ${bestCharterUp.previousValue} • Nhóm: ${groupLabel('charter', bestCharterUp.name)}`, Math.abs(bestCharterUp.delta) + Math.abs(bestCharterUp.pct*100), 'charter');
+        const bestCharterUp = uniqueCharterUp[0];
+        if (bestCharterUp) {
+          maybePush(goodAlerts, t('alertGood'), 'good', `Charter ${withCountryFlag(bestCharterUp.name)} tăng ${Math.round(bestCharterUp.pct*100)}%`, `${t('latest7')}: ${bestCharterUp.currentValue} | ${t('prev7')}: ${bestCharterUp.previousValue} • Nhóm: ${groupLabel('charter', bestCharterUp.name)}`, Math.abs(bestCharterUp.delta) + Math.abs(bestCharterUp.pct*100), 'charter', `up:${bestCharterUp.name}`);
         }
 
-        const alerts = [...sortAlertBucket(warnAlerts), ...sortAlertBucket(goodAlerts)].slice(0, 4);
+        const dedupeAlerts = (items) => {
+          const seen = new Set();
+          return items.filter(item => {
+            const key = item.dedupeKey || `${item.groupOrder}:${item.main}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+        };
+
+        const positiveAlerts = dedupeAlerts(sortAlertBucket(goodAlerts)).slice(0, 2);
+        const negativeAlerts = dedupeAlerts(sortAlertBucket(warnAlerts)).slice(0, 2);
 
         const renderMoverList = (items, type='up') => {
           if (!items.length) return <div className="mini-note">{t('noMover')}</div>;
@@ -1379,34 +1431,36 @@ margin-bottom:16px;
         };
 
         return (
-          <div className="insight-grid">
-            <div className="insight-card">
-              <div className="insight-title">{t('moversTitle')}</div>
-              <div className="movers-grid">
-                <div className="mover-col">
-                  <div className="mover-col-title mover-up">▲ {t('moversUp')}</div>
-                  {renderMoverList(combineUp, 'up')}
-                </div>
-                <div className="mover-col">
-                  <div className="mover-col-title mover-down">▼ {t('moversDown')}</div>
-                  {renderMoverList(combineDown, 'down')}
+          <div className="insight-shell">
+            <div className="insight-shell-title">{t('alertsTitle')}</div>
+            <div className="insight-grid insight-grid-single">
+              <div className="insight-card insight-card-compact">
+                <div className="alert-col-title">{t('alertGood')}</div>
+                <div className="alert-list">
+                  {positiveAlerts.length ? positiveAlerts.map((alert, idx) => (
+                    <div className="alert-item" key={`good-${idx}`}>
+                      <span className={`alert-badge ${alert.badgeClass}`}>{alert.kind}</span>
+                      <div>
+                        <div className="alert-main">{alert.main}</div>
+                        <div className="alert-sub">{alert.sub}</div>
+                      </div>
+                    </div>
+                  )) : <div className="mini-note">{t('noMover')}</div>}
                 </div>
               </div>
-              <div className="mini-note">{t('noteMover')}</div>
-            </div>
-
-            <div className="insight-card">
-              <div className="insight-title">{t('alertsTitle')}</div>
-              <div className="alert-list">
-                {alerts.length ? alerts.map((alert, idx) => (
-                  <div className="alert-item" key={`alert-${idx}`}>
-                    <span className={`alert-badge ${alert.badgeClass}`}>{alert.kind}</span>
-                    <div>
-                      <div className="alert-main">{alert.main}</div>
-                      <div className="alert-sub">{alert.sub}</div>
+              <div className="insight-card insight-card-compact insight-col-divider">
+                <div className="alert-col-title">{t('alertWarn')}</div>
+                <div className="alert-list">
+                  {negativeAlerts.length ? negativeAlerts.map((alert, idx) => (
+                    <div className="alert-item" key={`warn-${idx}`}>
+                      <span className={`alert-badge ${alert.badgeClass}`}>{alert.kind}</span>
+                      <div>
+                        <div className="alert-main">{alert.main}</div>
+                        <div className="alert-sub">{alert.sub}</div>
+                      </div>
                     </div>
-                  </div>
-                )) : <div className="mini-note">{t('noMover')}</div>}
+                  )) : <div className="mini-note">{t('noMover')}</div>}
+                </div>
               </div>
             </div>
           </div>
@@ -1420,7 +1474,9 @@ margin-bottom:16px;
           .sort((a, b) => {
             const dateDiff = b.date - a.date;
             if (dateDiff !== 0) return dateDiff;
-            return parseTimeToFraction(a.time) - parseTimeToFraction(b.time);
+            const cityDiff = (a.city || '').localeCompare(b.city || '', 'en');
+            if (cityDiff !== 0) return cityDiff;
+            return (a.flightNo || '').localeCompare(b.flightNo || '', 'en');
           });
 
         if (!charterRows.length) return null;
@@ -1441,7 +1497,6 @@ margin-bottom:16px;
                     <th className="border border-gray-300 font-bold">{t('airlineHeader')}</th>
                     <th className="border border-gray-300 font-bold">{t('cityHeader')}</th>
                     <th className="border border-gray-300 font-bold">{t('countryHeader')}</th>
-                    <th className="border border-gray-300 font-bold">{t('timeHeader')}</th>
                     <th className="border border-gray-300 font-bold">{t('flightNoHeader')}</th>
                   </tr>
                 </thead>
@@ -1453,7 +1508,6 @@ margin-bottom:16px;
                       <td className="border border-gray-300 text-gray-800">{row.airline}</td>
                       <td className="border border-gray-300 text-gray-800">{row.city}</td>
                       <td className="border border-gray-300 text-gray-800">{withCountryFlag(row.country)}</td>
-                      <td className="border border-gray-300 text-gray-800">{row.time}</td>
                       <td className="border border-gray-300 text-gray-800">{row.flightNo}</td>
                     </tr>
                   ))}
@@ -1736,8 +1790,46 @@ margin-bottom:16px;
                   }}
                 />
                 <Line type="monotone" dataKey="ma10" stroke="#ff6b8a" name={`MA${TREND_WINDOW}`} strokeWidth={2.5} strokeDasharray="6 6" dot={false} activeDot={{ r: 4, strokeWidth: 0, fill: '#ff6b8a' }} />
-                                <Line type="monotone" dataKey="domesticFlights" stroke="#10b981" name="Nội địa" strokeWidth={1.8} strokeOpacity={0.95} dot={false} activeDot={{ r: 4, strokeWidth: 0, fill: '#10b981' }} />
-                <Line type="monotone" dataKey="internationalFlights" stroke="#f59e0b" name="Quốc tế" strokeWidth={1.8} strokeOpacity={0.95} dot={false} activeDot={{ r: 4, strokeWidth: 0, fill: '#f59e0b' }} />
+                                <Line
+                  type="monotone"
+                  dataKey="domesticFlights"
+                  stroke="#10b981"
+                  name="Nội địa"
+                  strokeWidth={1.8}
+                  strokeOpacity={0.95}
+                  dot={false}
+                  activeDot={{ r: 4, strokeWidth: 0, fill: '#10b981' }}
+                  label={(props) => {
+                    const { x, y, value, index } = props;
+                    const dataLength = enrichedData.length;
+                    if (index < dataLength - TREND_WINDOW) return null;
+                    return (
+                      <text x={x} y={y - 8} textAnchor="middle" fontSize="8.5" fontWeight="600" fill="#10b981">
+                        {value}
+                      </text>
+                    );
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="internationalFlights"
+                  stroke="#f59e0b"
+                  name="Quốc tế"
+                  strokeWidth={1.8}
+                  strokeOpacity={0.95}
+                  dot={false}
+                  activeDot={{ r: 4, strokeWidth: 0, fill: '#f59e0b' }}
+                  label={(props) => {
+                    const { x, y, value, index } = props;
+                    const dataLength = enrichedData.length;
+                    if (index < dataLength - TREND_WINDOW) return null;
+                    return (
+                      <text x={x} y={y + 14} textAnchor="middle" fontSize="8.5" fontWeight="600" fill="#f59e0b">
+                        {value}
+                      </text>
+                    );
+                  }}
+                />
               </LineChart>
             </ResponsiveContainer>
                       </div>
