@@ -906,6 +906,52 @@ margin-bottom:16px;
       return results;
     };
 
+
+    const aggregateCountrySourceMap = (data, startDate, endDate, numDays) => {
+      const map = {};
+
+      data.forEach(row => {
+        if (row.date < startDate || row.date > endDate) return;
+        const country = row.country;
+        const city = row.city;
+        if (!country || country === 'Vietnam') return;
+
+        if (!map[country]) {
+          map[country] = {
+            total: 0,
+            cities: {}
+          };
+        }
+
+        map[country].total += 1;
+        map[country].cities[city] = (map[country].cities[city] || 0) + 1;
+      });
+
+      return Object.entries(map)
+        .map(([country, info]) => {
+          const cityList = Object.entries(info.cities).sort((a, b) => b[1] - a[1]);
+          const topCities = cityList.slice(0, 3);
+          const extraCount = Math.max(0, cityList.length - topCities.length);
+
+          const cityText = topCities.map(([city, count]) => {
+            const avg = numDays > 0 ? Math.round(count / numDays) : 0;
+            return `${city} (≈ ${avg})`;
+          }).join(' / ');
+
+          return {
+            country,
+            total: info.total,
+            avg: numDays > 0 ? Math.round(info.total / numDays) : 0,
+            cityText: extraCount > 0 ? `${cityText} / +${extraCount} city khác` : cityText
+          };
+        })
+        .sort((a, b) => b.total - a.total)
+        .map((item, index) => ({
+          ...item,
+          stt: index + 1
+        }));
+    };
+
     const getCurrentMonthSheetName = (date) => {
       const monthNames = ['Tháng 01', 'Tháng 02', 'Tháng 03', 'Tháng 04', 'Tháng 05', 'Tháng 06',
                           'Tháng 07', 'Tháng 08', 'Tháng 09', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
@@ -1001,6 +1047,7 @@ margin-bottom:16px;
       const [showAllCountry, setShowAllCountry] = useState(false);
       const [showAllAirline, setShowAllAirline] = useState(false);
       const [showAllCity, setShowAllCity] = useState(false);
+      const [showAllCountrySourceMap, setShowAllCountrySourceMap] = useState(false);
       const [noDataMsg, setNoDataMsg] = useState('');
 
       const translations = {
@@ -1216,7 +1263,27 @@ margin-bottom:16px;
         };
       };
 
-      const renderInfographic = () => {
+
+      const buildExecutiveInsight = (totalTrend, domesticPct, intlPct, charterPct, peakValue, lowValue) => {
+        const parts = [];
+        if (totalTrend.key === 'up') parts.push('Tổng chuyến đang tăng');
+        else if (totalTrend.key === 'down') parts.push('Tổng chuyến đang giảm');
+        else parts.push('Tổng chuyến đang đi ngang');
+
+        if (domesticPct > intlPct) parts.push(`nội địa chiếm ưu thế ${domesticPct}% so với quốc tế ${intlPct}%`);
+        else if (intlPct > domesticPct) parts.push(`quốc tế chiếm ưu thế ${intlPct}% so với nội địa ${domesticPct}%`);
+        else parts.push(`nội địa và quốc tế cân bằng ${domesticPct}%/${intlPct}%`);
+
+        if (charterPct >= 15) parts.push(`charter ở mức cao (${charterPct}% tổng chuyến)`);
+        else if (charterPct >= 8) parts.push(`charter giữ mức ổn định (${charterPct}% tổng chuyến)`);
+        else parts.push(`charter ở mức thấp (${charterPct}% tổng chuyến)`);
+
+        if (peakValue && lowValue) parts.push(`biên dao động ngày từ ${lowValue} đến ${peakValue} chuyến`);
+
+        return parts.join('; ') + '.';
+      };
+
+      const renderExecutiveSummary = () => {
         const totalDomesticIntl = domesticInternational.reduce((sum, item) => sum + item.value, 0);
         const domesticLabel = language === 'vi' ? 'Nội địa' : 'Domestic';
         const internationalLabel = language === 'vi' ? 'Quốc tế' : 'International';
@@ -1232,9 +1299,6 @@ margin-bottom:16px;
 
         const flightsByDate = aggregateFlightsByDate(filteredData, startDate, endDate);
         const totalTrend = getSeriesTrendFromFlights(flightsByDate, 'totalFlights', TREND_WINDOW);
-        const trendText = `MA${TREND_WINDOW} ${totalTrend.text}`;
-        const trendClass = `master-trend-${totalTrend.className}`;
-        const trendArrow = totalTrend.arrow;
 
         const avgSuffix = language === 'vi' ? 'chuyến/ngày' : 'flights/day';
 
@@ -1248,12 +1312,21 @@ margin-bottom:16px;
           }
         };
 
+        const executiveInsight = buildExecutiveInsight(
+          totalTrend,
+          domesticPct,
+          intlPct,
+          charterPct,
+          peakDay ? peakDay.totalFlights : 0,
+          lowDay ? lowDay.totalFlights : 0
+        );
+
         return (
-          <div className="kpi-strip-wrap">
-            <div className="kpi-strip-top">
-              <div className="kpi-strip-note">
-                <span className={`master-trend-pill ${trendClass}`}>{trendArrow} {trendText}</span>
-                <span className="kpi-strip-text">MA{TREND_WINDOW} hiện tại ≈ {Math.round(totalTrend.currentAvg)} chuyến/ngày; {TREND_WINDOW} ngày trước ≈ {Math.round(totalTrend.previousAvg)} chuyến/ngày</span>
+          <div className="master-overview-wrap">
+            <div className="master-overview-header">
+              <div>
+                <h2 className="master-overview-title">Tổng quan (Executive Summary)</h2>
+                <div className="master-overview-sub">{executiveInsight}</div>
               </div>
               <div className="master-chip">{formatNumber(totalFlights)} chuyến | {numDays} ngày</div>
             </div>
@@ -1292,7 +1365,6 @@ margin-bottom:16px;
           </div>
         );
       };
-
       const renderInsightLite = () => {
         if (numDays < 14) return null;
 
@@ -1519,6 +1591,58 @@ margin-bottom:16px;
                 {showAllCis ? t('less') : t('more')}
               </button>
             )}
+          </div>
+        );
+      };
+
+
+      const renderCountrySourceMap = (rows) => {
+        if (!rows.length) return null;
+
+        const displayRows = showAllCountrySourceMap ? rows : rows.slice(0, 5);
+
+        return (
+          <div className="stats-block">
+            <h3 className="stats-block-title">1. Thống kê chuyến bay theo Quốc gia</h3>
+
+            <div className="table-container">
+              <table className="responsive-table w-full text-left border-collapse border border-gray-300 pie-table">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="border border-gray-300 font-bold">STT</th>
+                    <th className="border border-gray-300 font-bold">Quốc gia</th>
+                    <th className="border border-gray-300 font-bold">Tổng chuyến</th>
+                    <th className="border border-gray-300 font-bold">Bình quân/ngày</th>
+                    <th className="border border-gray-300 font-bold">Thành phố nguồn</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayRows.map((item, index) => {
+                    const rowBg = index === 0 ? 'bg-blue-50' : index === 1 ? 'bg-sky-50' : index === 2 ? 'bg-emerald-50' : '';
+                    return (
+                      <tr key={`csm-${index}`} className={`border-t border-gray-300 ${rowBg}`}>
+                        <td className="border border-gray-300 font-semibold text-gray-700">{item.stt}</td>
+                        <td className="border border-gray-300 font-bold text-blue-600">{withCountryFlag(item.country)}</td>
+                        <td className="border border-gray-300 font-bold text-gray-800">{item.total}</td>
+                        <td className="border border-gray-300 text-gray-600 italic">≈ {item.avg}</td>
+                        <td className="border border-gray-300 text-gray-800">{item.cityText}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {rows.length > 5 && (
+              <button
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm mt-2"
+                onClick={() => setShowAllCountrySourceMap(!showAllCountrySourceMap)}
+              >
+                {showAllCountrySourceMap ? t('less') : t('more')}
+              </button>
+            )}
+
+            <div className="mini-note">Hiển thị top 3 thành phố nguồn mỗi quốc gia (≈ chuyến/ngày). Tô nền nhẹ top 3 quốc gia mạnh nhất.</div>
           </div>
         );
       };
@@ -1857,6 +1981,8 @@ margin-bottom:16px;
       const byCity = aggregateData(filteredData, 'city', startDate, endDate);
       const charterCountries = aggregateCharterCountries(filteredData, startDate, endDate);
 
+      const countrySourceMap = aggregateCountrySourceMap(filteredData, startDate, endDate, numDays);
+
       const topDomesticData = aggregateData(filteredData.filter(r => r.isDomestic), 'city', startDate, endDate);
       const topIntlCities = aggregateData(filteredData.filter(r => r.isInternational), 'city', startDate, endDate);
 
@@ -1927,17 +2053,18 @@ margin-bottom:16px;
             </div>
           </div>
 
+          {renderExecutiveSummary()}
+
           {numDays >= 7 && (
             <div className="hero-chart-section">
               {renderLineChart(aggregateFlightsByDate(filteredData, startDate, endDate), t('timeline', { start: startDateFormatted, end: endDateFormatted }))}
             </div>
           )}
 
-          {renderInfographic()}
           {renderInsightLite()}
 
           <div className="space-y-6">
-            {renderStatsBlock(byCountry, t('pie2'), 'country')}
+            {renderCountrySourceMap(countrySourceMap)}
             {renderStatsBlock(byCity, t('pie4'), 'city')}
             {renderStatsBlock(byAirline, t('pie3'), 'airline')}
             {renderStatsBlock(charterCountries, t('pie5'), 'charter')}
