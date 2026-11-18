@@ -1,0 +1,2188 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>THỐNG KÊ CHUYẾN BAY ĐẾN SÂN BAY QUỐC TẾ PHÚ QUỐC</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <script src="https://unpkg.com/papaparse@5.5.3/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chrono-node/1.3.11/chrono.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.15.0/Recharts.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .custom-legend {
+      font-size: 8px !important;
+    }
+    .custom-tooltip {
+      font-size: 8px !important;
+    }
+    .pie-table {
+      font-size: 13px !important;
+    }
+    .animate-row {
+      animation: fadeInUp 0.6s ease-out forwards;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    .animate-row:nth-child(1) { animation-delay: 0.1s; }
+    .animate-row:nth-child(2) { animation-delay: 0.2s; }
+    .animate-row:nth-child(3) { animation-delay: 0.3s; }
+    .animate-row:nth-child(4) { animation-delay: 0.4s; }
+    .animate-row:nth-child(5) { animation-delay: 0.5s; }
+    .animate-row:nth-child(6) { animation-delay: 0.6s; }
+    .animate-row:nth-child(7) { animation-delay: 0.7s; }
+    .animate-row:nth-child(8) { animation-delay: 0.8s; }
+    .animate-row:nth-child(9) { animation-delay: 0.9s; }
+    .animate-row:nth-child(10) { animation-delay: 1s; }
+    @keyframes fadeInUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .table-container {
+      overflow-x: auto;
+    }
+    #password-form {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    #password-form form {
+      background: white;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+    }
+    #password-form input {
+      width: 100%;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ddd;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+    }
+    #password-form button {
+      width: 100%;
+      padding: 0.75rem;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    #password-form button:hover {
+      background: #5a67d8;
+    }
+    #error-msg {
+      color: #e53e3e;
+      margin-top: 0.5rem;
+      font-size: 0.875rem;
+    }
+    #dashboard {
+      display: none;
+    }
+    .no-data-msg {
+      text-align: center;
+      color: #666;
+      font-style: italic;
+      padding: 2rem;
+    }
+    .footer-text {
+      font-size: 0.75rem;
+      color: #9ca3af;
+      margin-top: 1rem;
+    }
+    /* Larger font for pie labels */
+    .recharts-pie-label-text {
+      font-size: 12px !important;
+      fill: #000 !important;
+    }
+    /* Larger pie for charts 2,3,4 */
+    .small-pie .recharts-pie {
+      transform: scale(1) !important;
+    }
+    /* Infographic styles - Adjusted font sizes and reduced height */
+    .infographic-card {
+      background: linear-gradient(135deg, var(--bg-color) 0%, var(--bg-color-light) 100%);
+      border-radius: 12px;
+      padding: 0.75rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
+      min-height: 170px; /* Changed to min-height for dynamic height */
+      height: auto; /* Allow dynamic height */
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 0.5rem; /* Increased gap for better spacing */
+    }
+    .total-flights-card {
+      justify-content: space-between;
+    }
+    .infographic-card:hover {
+      transform: translateY(-2px);
+    }
+    .infographic-card h3 {
+      font-size: 1rem; /* Increased by ~1px (from 0.95rem) */
+      font-weight: bold;
+      margin: 0;
+      display: flex;
+      align-items: center;
+    }
+    .infographic-card h3 span {
+      margin-right: 0.25rem;
+      font-size: 1.1rem;
+    }
+    .infographic-card p {
+      margin: 0;
+      font-size: 0.9rem; /* Increased by ~1px (from 0.85rem) */
+      line-height: 1.15;
+    }
+    .infographic-card .highlight {
+      font-size: 1.25rem; /* Increased by ~1px (from 1.2rem) */
+      font-weight: bold;
+      color: var(--text-color);
+    }
+    .infographic-card .top-items {
+      font-size: 0.85rem; /* Increased by ~1px (from 0.8rem) */
+      line-height: 1.1;
+      overflow: hidden;
+    }
+    .infographic-card .top-items span,
+    .infographic-card .top-items p {
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .infographic-card .interesting-fact {
+      font-size: 0.85rem;
+      font-style: italic;
+      color: #333; /* Changed to darker color for better readability */
+      font-weight: 500;
+      text-align: left;
+      margin-top: 0.5rem;
+    }
+    /* Responsive table adjustments */
+    .responsive-table {
+      width: 100%;
+      min-width: 600px; /* Minimum width to prevent too much squeezing */
+    }
+    .responsive-table th,
+    .responsive-table td {
+      padding: 0.5rem 0.75rem; /* Responsive padding: smaller on mobile */
+      white-space: nowrap; /* Prevent text wrapping in cells */
+    }
+    @media (max-width: 640px) {
+      .responsive-table th,
+      .responsive-table td {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem; /* Smaller font on mobile */
+      }
+      .infographic-card {
+        padding: 1rem; /* Increase padding on mobile */
+      }
+    }
+
+
+      .topbar-wrap{
+        background:linear-gradient(135deg,#f8fbff 0%,#eef4ff 100%);
+        border:1px solid #dbeafe;
+        border-radius:20px;
+        padding:12px 14px;
+        box-shadow:0 10px 28px rgba(15,23,42,0.06);
+        margin-bottom:10px;
+      }
+
+      .topbar-grid{
+        display:grid;
+        grid-template-columns:110px 110px minmax(180px,240px) 130px 160px;
+        gap:8px 10px;
+        align-items:end;
+        justify-content:space-between;
+      }
+
+      .topbar-label{
+        display:block;
+        font-size:10px;
+        font-weight:700;
+        color:#64748b;
+        margin-bottom:5px;
+      }
+
+      .topbar-input{
+        width:100%;
+        height:36px;
+        border:1px solid #cbd5e1;
+        border-radius:12px;
+        padding:0 10px;
+        color:#0f172a;
+        background:#ffffff;
+        outline:none;
+        font-size:13px;
+      }
+
+      .topbar-input:focus{
+        border-color:#60a5fa;
+        box-shadow:0 0 0 3px rgba(96,165,250,0.2);
+      }
+
+      .topbar-field.compact{
+        min-width:120px;
+      }
+
+      .topbar-url{
+        max-width:420px;
+      }
+
+      .topbar-url .topbar-input{
+        font-size:10px;
+        color:#64748b;
+        letter-spacing:0;
+      }
+
+      .topbar-btn{
+        height:36px;
+        padding:0 12px;
+        border-radius:12px;
+        font-weight:800;
+        color:#fff;
+        border:none;
+        cursor:pointer;
+        white-space:nowrap;
+        box-shadow:0 6px 18px rgba(37,99,235,0.16);
+      }
+
+      .topbar-btn.primary{
+        background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%);
+      }
+
+      .topbar-btn.secondary{
+        background:linear-gradient(135deg,#0ea5e9 0%,#2563eb 100%);
+      }
+
+      .dashboard-title{
+        font-size:34px;
+        line-height:1.15;
+        font-weight:900;
+        color:#1d4ed8;
+        text-align:center;
+        margin-bottom:14px;
+        letter-spacing:0.3px;
+margin-bottom:16px; 
+      }
+
+      .chart-premium-card{
+        background:#ffffff;
+        border:1px solid #e2e8f0;
+        border-radius:20px;
+        padding:18px 20px 12px;
+        box-shadow:0 10px 30px rgba(15,23,42,0.05);
+        margin:0;
+      }
+
+      .chart-premium-title{
+  font-size:24px;
+  font-weight:900;
+  color:#0f172a;
+  margin:0 0 6px 0;
+  text-align:center;
+}
+
+      .chart-premium-sub{
+  font-size:14px;
+  color:#64748b;
+  margin-bottom:12px;
+  text-align:center;
+}
+
+      @media (max-width: 1200px){
+        .topbar-grid{
+          grid-template-columns:140px 140px minmax(220px,1fr) auto auto;
+        }
+      }
+
+      @media (max-width: 900px){
+        .topbar-grid{
+          grid-template-columns:1fr 1fr;
+        }
+        .topbar-url{
+          max-width:none;
+          grid-column:1 / -1;
+        }
+        .topbar-btn{
+          width:100%;
+        }
+      }
+
+      @media (max-width: 640px){
+        .topbar-grid{
+          grid-template-columns:1fr;
+        }
+        .dashboard-title{
+          font-size:24px;
+        }
+        .chart-premium-title{
+          font-size:18px;
+        }
+      }
+
+      @media (max-width: 1200px){
+        .master-kpi-grid{grid-template-columns:repeat(3, minmax(0,1fr));}
+      }
+
+      @media (max-width: 760px){
+        .master-kpi-grid{grid-template-columns:repeat(2, minmax(0,1fr));}
+      }
+
+      @media (max-width: 520px){
+        .master-kpi-grid{grid-template-columns:1fr;}
+      }
+
+      .master-overview-wrap{
+
+        background:#ffffff;
+        border-radius:18px;
+        padding:24px;
+        box-shadow:0 8px 24px rgba(15,23,42,0.08);
+        border:1px solid #e5e7eb;
+      }
+
+      .master-overview-header{
+        display:flex;
+        justify-content:space-between;
+        align-items:flex-start;
+        gap:16px;
+        flex-wrap:wrap;
+        margin-bottom:18px;
+      }
+
+      .master-overview-title{
+        font-size:20px;
+        font-weight:800;
+        color:#0f172a;
+        line-height:1.35;
+        margin:0;
+      }
+
+      .master-overview-sub{
+        margin-top:6px;
+        font-size:14px;
+        color:#64748b;
+      }
+
+      .master-chip{
+        display:inline-flex;
+        align-items:center;
+        gap:6px;
+        padding:8px 12px;
+        background:#eff6ff;
+        color:#1d4ed8;
+        border:1px solid #bfdbfe;
+        border-radius:999px;
+        font-size:13px;
+        font-weight:700;
+        white-space:nowrap;
+      }
+
+      .master-kpi-grid{
+        display:grid;
+        grid-template-columns:repeat(5, minmax(0,1fr));
+        gap:14px;
+        margin:0;
+      }
+
+      .kpi-strip-wrap{
+        background:#ffffff;
+        border-radius:18px;
+        padding:14px 16px;
+        box-shadow:0 8px 24px rgba(15,23,42,0.05);
+        border:1px solid #e5e7eb;
+      }
+
+      .kpi-strip-top{
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:12px;
+        flex-wrap:wrap;
+        margin-bottom:12px;
+      }
+
+      .kpi-strip-note{
+        display:flex;
+        align-items:center;
+        gap:10px;
+        flex-wrap:wrap;
+      }
+
+      .kpi-strip-text{
+        font-size:13px;
+        font-weight:700;
+        color:#475569;
+      }
+
+      .master-kpi-card{
+        border-radius:16px;
+        padding:14px;
+        min-height:126px;
+        color:#0f172a;
+        border:1px solid #dbeafe;
+        box-shadow:0 4px 14px rgba(37,99,235,0.06);
+      }
+
+      .master-kpi-card.blue{ background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%); }
+      .master-kpi-card.green{ background:linear-gradient(135deg,#ecfdf5 0%,#d1fae5 100%); border-color:#a7f3d0; }
+      .master-kpi-card.amber{ background:linear-gradient(135deg,#fffbeb 0%,#fef3c7 100%); border-color:#fde68a; }
+      .master-kpi-card.slate{ background:linear-gradient(135deg,#f8fafc 0%,#e2e8f0 100%); border-color:#cbd5e1; }
+
+      .master-kpi-label{
+        font-size:13px;
+        font-weight:700;
+        color:#334155;
+        margin-bottom:8px;
+      }
+
+      .master-kpi-value{
+        font-size:26px;
+        font-weight:800;
+        line-height:1;
+        color:#0f172a;
+        margin-bottom:8px;
+      }
+
+      .master-kpi-meta{
+        font-size:13px;
+        color:#475569;
+        line-height:1.45;
+      }
+
+      .master-detail-grid{
+        display:grid;
+        grid-template-columns:1.15fr 0.85fr;
+        gap:16px;
+      }
+
+      .stats-block{
+        background:#ffffff;
+        border:1px solid #e5e7eb;
+        border-radius:18px;
+        padding:18px;
+        box-shadow:0 8px 24px rgba(15,23,42,0.06);
+      }
+
+      .stats-block-title{
+        font-size:20px;
+        font-weight:800;
+        color:#0f172a;
+        margin:0 0 14px 0;
+      }
+
+      .stats-block-grid{
+        display:grid;
+        grid-template-columns:minmax(0, 1.05fr) minmax(320px, 0.95fr);
+        gap:18px;
+        align-items:start;
+      }
+
+      .stats-table-wrap{
+        overflow-x:auto;
+      }
+
+      .stats-chart-wrap{
+        background:#f8fafc;
+        border:1px solid #e2e8f0;
+        border-radius:16px;
+        padding:10px 10px 2px;
+      }
+
+      .stats-empty{
+        text-align:center;
+        color:#64748b;
+        padding:18px;
+        font-style:italic;
+      }
+
+      .master-panel{
+        background:#f8fafc;
+        border:1px solid #e2e8f0;
+        border-radius:16px;
+        padding:18px;
+      }
+
+      .master-panel-title{
+        font-size:16px;
+        font-weight:800;
+        color:#0f172a;
+        margin-bottom:12px;
+      }
+
+      .master-summary-table{
+        width:100%;
+        border-collapse:collapse;
+        font-size:14px;
+      }
+
+      .master-summary-table th{
+        text-align:left;
+        font-weight:800;
+        color:#0f172a;
+        padding:12px 10px;
+        border-bottom:2px solid #cbd5e1;
+      }
+
+      .master-summary-table td{
+        padding:12px 10px;
+        border-bottom:1px solid #e2e8f0;
+        vertical-align:top;
+        color:#1e293b;
+      }
+
+      .master-summary-table td.value{
+        font-weight:700;
+        color:#0f172a;
+      }
+
+      .master-rank-list{
+        margin:0;
+        padding-left:20px;
+      }
+
+      .master-rank-list li{
+        margin-bottom:8px;
+        color:#1e293b;
+        line-height:1.45;
+      }
+
+      .master-rank-list li strong{
+        color:#0f172a;
+      }
+
+      .master-mini-grid{
+        display:grid;
+        grid-template-columns:repeat(2, minmax(0,1fr));
+        gap:12px;
+        margin-top:14px;
+      }
+
+      .master-mini-card{
+        background:#ffffff;
+        border:1px solid #e2e8f0;
+        border-radius:12px;
+        padding:12px;
+      }
+
+      .master-mini-label{
+        font-size:11px;
+        font-weight:700;
+        color:#64748b;
+        margin-bottom:6px;
+        text-transform:uppercase;
+        letter-spacing:.04em;
+      }
+
+      .master-mini-value{
+        font-size:18px;
+        font-weight:800;
+        color:#0f172a;
+        line-height:1.3;
+      }
+
+      @media (max-width: 1200px){
+        .master-kpi-grid{ grid-template-columns:repeat(3, minmax(0,1fr)); }
+        .master-detail-grid{ grid-template-columns:1fr; }
+      }
+
+      @media (max-width: 900px){
+        .master-kpi-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+        .master-detail-grid{ grid-template-columns:1fr; }
+        .stats-block-grid{ grid-template-columns:1fr; }
+      }
+
+      @media (max-width: 640px){
+        .master-overview-wrap{ padding:18px; }
+        .master-kpi-grid{ grid-template-columns:1fr; }
+        .master-mini-grid{ grid-template-columns:1fr; }
+        .master-kpi-value{ font-size:28px; }
+        .master-overview-title{ font-size:18px; }
+        .stats-block{ padding:14px; }
+        .stats-block-title{ font-size:18px; }
+      }
+
+        .master-summary-table{
+          font-size:14px;
+        }
+        .master-summary-title{
+          font-size:18px;
+        }
+      }
+
+    
+    .master-trend-pill{display:inline-block;padding:6px 12px;border-radius:999px;font-weight:800;font-size:13px;line-height:1.2}
+    .master-trend-up{background:#dcfce7;color:#166534;border:1px solid #86efac}
+    .master-trend-down{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+    .master-trend-flat{background:#e0e7ff;color:#3730a3;border:1px solid #a5b4fc}
+    .chart-signal-row{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:6px 0 12px}
+    .chart-signal-pill{display:inline-flex;align-items:center;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:700;line-height:1.2;border:1px solid transparent}
+    .chart-signal-up{background:#dcfce7;color:#166534;border-color:#86efac}
+    .chart-signal-down{background:#fee2e2;color:#991b1b;border-color:#fca5a5}
+    .chart-signal-flat{background:#e0e7ff;color:#3730a3;border-color:#a5b4fc}
+
+    .hero-chart-section{
+      background:#ffffff;
+      border-radius:20px;
+      padding:16px 16px 6px;
+      box-shadow:0 10px 30px rgba(15,23,42,0.06);
+      border:1px solid #e5e7eb;
+    }
+
+
+    .chart-ma7-note{
+      text-align:center;
+      font-size:12px;
+      font-weight:600;
+      color:#475569;
+      margin:0 0 10px 0;
+    }
+
+
+      .insight-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px;}
+      .insight-card{background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);border:1px solid #e2e8f0;border-radius:18px;padding:14px 16px;box-shadow:0 8px 20px rgba(15,23,42,0.05);min-height:100%;}
+      .insight-title{font-size:15px;font-weight:800;color:#0f172a;margin-bottom:10px;}
+      .movers-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+      .mover-col{background:#fff;border:1px solid #edf2f7;border-radius:14px;padding:10px 12px;}
+      .mover-col-title{font-size:12px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+      .mover-up{color:#15803d;}
+      .mover-down{color:#b91c1c;}
+      .mover-list{display:flex;flex-direction:column;gap:8px;}
+      .mover-item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:8px;border-bottom:1px dashed #e2e8f0;}
+      .mover-item:last-child{border-bottom:none;padding-bottom:0;}
+      .mover-name{font-size:13px;font-weight:700;color:#0f172a;}
+      .mover-meta{font-size:11px;color:#64748b;margin-top:2px;}
+      .mover-value{font-size:13px;font-weight:800;white-space:nowrap;}
+      .alert-list{display:flex;flex-direction:column;gap:10px;}
+      .alert-col-title{font-size:14px;font-weight:800;margin:0 0 10px 0;color:#0f172a;}
+      .alert-item{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:14px;border:1px solid #e2e8f0;background:#fff;}
+      .alert-badge{font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px;line-height:1;white-space:nowrap;}
+      .alert-badge.warn{background:#fff7ed;color:#c2410c;border:1px solid #fdba74;}
+      .alert-badge.good{background:#f0fdf4;color:#15803d;border:1px solid #86efac;}
+      .alert-main{font-size:13px;font-weight:700;color:#0f172a;}
+      .alert-sub{font-size:11px;color:#64748b;margin-top:2px;}
+      .mini-note{font-size:11px;color:#64748b;margin-top:8px;}
+      @media (max-width: 980px){.insight-grid{grid-template-columns:1fr;}.movers-grid{grid-template-columns:1fr;}}
+
+  
+    .insight-shell{background:#fff;border:1px solid #dbe4f0;border-radius:26px;padding:26px 28px;box-shadow:0 10px 30px rgba(15,23,42,.05);}
+    .insight-shell-title{font-size:22px;font-weight:900;color:#0f172a;margin-bottom:18px;}
+    .insight-grid-single{gap:0;}
+    .insight-card-compact{border:none;box-shadow:none;background:transparent;padding:0 20px 0 0;}
+    .insight-col-divider{border-left:1px dashed #dbe4f0;padding-left:24px;padding-right:0;}
+    @media (max-width: 900px){.insight-shell{padding:20px 18px}.insight-card-compact{padding-right:0}.insight-col-divider{border-left:none;padding-left:0;border-top:1px dashed #dbe4f0;padding-top:16px;margin-top:16px}}
+
+</style>
+</head>
+<body class="bg-gray-100 font-sans">
+  <!-- Password Form -->
+  <div id="password-form">
+    <form id="password-input-form">
+      <h2 class="text-2xl font-bold mb-4 text-gray-800">Nhập mật khẩu để truy cập</h2>
+      <input type="password" id="password-input" placeholder="Mật khẩu" required />
+      <button type="submit">Xác nhận</button>
+      <div id="error-msg"></div>
+      <p class="footer-text">Written by Mr Ái Trì - 0903 049955</p>
+    </form>
+  </div>
+
+  <!-- Dashboard Content -->
+  <div id="dashboard">
+    <div id="root" class="container mx-auto p-4"></div>
+  </div>
+
+  <script>
+    // Password protection logic
+    const correctPassword = '123@456';
+    const form = document.getElementById('password-input-form');
+    const input = document.getElementById('password-input');
+    const errorMsg = document.getElementById('error-msg');
+    const dashboard = document.getElementById('dashboard');
+    const passwordForm = document.getElementById('password-form');
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const enteredPass = input.value.trim();
+      if (enteredPass === correctPassword) {
+        passwordForm.style.display = 'none';
+        dashboard.style.display = 'block';
+        // Delay render để script Babel load xong (tăng lên 1s để fix TypeError)
+        setTimeout(() => {
+          if (window.App && window.ReactDOM && window.ReactDOM.createRoot) {
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(React.createElement(window.App));
+          } else {
+            console.error('App or React chưa load. Reload trang.');
+            document.getElementById('root').innerHTML = '<div class="text-center text-red-500">Lỗi load dashboard. Reload trang và thử lại.</div>';
+          }
+        }, 1000);
+      } else {
+        errorMsg.textContent = 'Mật khẩu không đúng! Vui lòng thử lại.';
+        input.value = '';
+        input.focus();
+      }
+    });
+
+    // Auto-focus input sau khi DOM ready
+    window.addEventListener('load', () => { input.focus(); });
+  </script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef } = React;
+    const { PieChart, Pie, Tooltip, Legend, Cell, ResponsiveContainer, LineChart, Line, Area, XAxis, YAxis, CartesianGrid, Label } = Recharts;
+
+    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A28EFF', '#FF4D4F', '#4CAF50', '#FF6F61', '#6B7280', '#AB47BC', '#F97316', '#10B981'];
+    const TREND_WINDOW = 10;
+
+    const DAY_MS = 86400000;
+    const UNKNOWN = 'Không xác định';
+    const textValue = value => String(value ?? '').trim();
+    const comparisonKey = value => textValue(value).normalize('NFC').toLowerCase().replace(/\s+/g, ' ');
+
+    // Represent calendar days consistently, independently of the browser timezone.
+    const parseDate = (value) => {
+      const input = textValue(value);
+      const iso = input.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+      const local = input.match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$/);
+      if (!iso && !local) return null;
+      const [year, month, day] = (iso ? iso.slice(1) : local.slice(1).reverse()).map(Number);
+      const date = new Date(Date.UTC(year, month - 1, day));
+      return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 &&
+        date.getUTCDate() === day ? date : null;
+    };
+
+    const dateKey = date => date.toISOString().slice(0, 10);
+    const airportToday = () => parseDate(new Intl.DateTimeFormat('sv-SE', {
+      timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(new Date()));
+
+    const normalizeTime = (value) => {
+      const match = textValue(value).match(/^(\d{1,2}):(\d{2})(?::[0-5]\d)?\s*(AM|PM)?$/i);
+      if (!match) return '';
+      const [, hour, minute, period] = match;
+      let hours = Number(hour);
+      if (Number(minute) > 59 || (period ? hours < 1 || hours > 12 : hours > 23)) return '';
+      if (period) hours = hours % 12 + (period.toUpperCase() === 'PM' ? 12 : 0);
+      return `${String(hours).padStart(2, '0')}:${minute}`;
+    };
+
+    const normalizeCityName = (city) => {
+      if (city === 'Danang') return 'Da Nang';
+      return city.trim();
+    };
+
+    const cleanCountryName = (countryStr) => {
+      if (!countryStr) return 'Không xác định';
+      const parts = countryStr.split('|');
+      if (parts.length > 1) {
+        return parts[1].trim();
+      }
+      return countryStr.trim();
+    };
+
+    const getCountryFlag = (country) => {
+      const map = {
+        'South Korea': '🇰🇷', 'Korea': '🇰🇷', 'North Korea': '🇰🇵', 'China': '🇨🇳', 'Hong Kong': '🇭🇰',
+        'Thailand': '🇹🇭', 'Vietnam': '🇻🇳', 'Kazakhstan': '🇰🇿', 'Russia': '🇷🇺', 'Uzbekistan': '🇺🇿',
+        'Poland': '🇵🇱', 'Kyrgyzstan': '🇰🇬', 'Mongolia': '🇲🇳', 'Malaysia': '🇲🇾', 'Singapore': '🇸🇬',
+        'Taiwan': '🇹🇼', 'Japan': '🇯🇵', 'India': '🇮🇳', 'Czech Republic': '🇨🇿', 'Slovakia': '🇸🇰',
+        'Belarus': '🇧🇾', 'Ukraine': '🇺🇦', 'United Arab Emirates': '🇦🇪', 'Laos': '🇱🇦', 'Cambodia': '🇰🇭'
+      };
+      return map[country] || '🌐';
+    };
+
+    const withCountryFlag = (country) => `${getCountryFlag(country)} ${country}`;
+
+    const processAndCleanData = (data) => {
+      const rows = [];
+      const seen = new Map();
+      let invalidDates = 0;
+      let duplicates = 0;
+      const marked = value => textValue(value).toUpperCase() === 'X';
+
+      for (const row of data) {
+        const flightNo = textValue(row['Flight No']).replace(/^"|"$/g, '').toUpperCase();
+        if (!textValue(row['STT']) && !flightNo) continue;
+        const date = parseDate(row['Ngày']);
+        if (!date) {
+          invalidDates++;
+          continue;
+        }
+
+        const country = cleanCountryName(textValue(row['Quốc gia'])) || UNKNOWN;
+        const city = normalizeCityName(textValue(row['Thành phố']) || UNKNOWN);
+        const airline = textValue(row['Hãng bay']) || UNKNOWN;
+        const time = normalizeTime(row.TIME);
+        const source = textValue(row['Nguồn'] || row.Source);
+        const status = textValue(row['Trạng thái'] || row.Status);
+        const recordType = comparisonKey(row['Loại dữ liệu'] || row['Data Type']);
+        const landed = ['đã hạ cánh', 'landed', 'arrived'].includes(comparisonKey(status));
+        const planned = ['lịch dự kiến', 'dự kiến', 'planned', 'scheduled'].includes(recordType);
+        const domesticFlag = marked(row.Domestic);
+        const internationalFlag = marked(row.International);
+        const countryKey = comparisonKey(country);
+        const countryKnown = !['không xác định', 'unknown', '-', 'n/a'].includes(countryKey);
+        const vietnam = ['vietnam', 'việt nam', 'viet nam'].includes(countryKey);
+        const unambiguousType = !(domesticFlag && internationalFlag);
+        const isDomestic = unambiguousType && (domesticFlag || (!internationalFlag && countryKnown && vietnam));
+        const isInternational = unambiguousType && (internationalFlag || (!domesticFlag && countryKnown && !vietnam));
+
+        // A missing flight number, origin or time makes automatic deduplication unsafe.
+        const key = flightNo && !['N/A', '-'].includes(flightNo) && city !== UNKNOWN && time
+          ? JSON.stringify([dateKey(date), flightNo, comparisonKey(city), time, comparisonKey(source), recordType])
+          : null;
+        const record = {
+          date, city, country, airline, time, source, status, planned, landed,
+          flightNo: flightNo || 'N/A',
+          isDomestic, isInternational,
+          isCharter: isInternational && marked(row.Charter),
+          needsReview: !countryKnown || city === UNKNOWN || airline === UNKNOWN || !unambiguousType
+        };
+        if (key && seen.has(key)) {
+          const index = seen.get(key);
+          const previous = rows[index];
+          if ((landed && !previous.landed) || (landed === previous.landed && previous.needsReview && !record.needsReview)) {
+            rows[index] = record;
+          }
+          duplicates++;
+          continue;
+        }
+        if (key) seen.set(key, rows.length);
+        rows.push(record);
+      }
+
+      return { rows, invalidDates, duplicates };
+    };
+
+    const aggregateData = (data, groupBy, startDate = null, endDate = null) => {
+      const counts = {};
+      data.forEach(row => {
+        const rowDate = row.date;
+        if (startDate && endDate) {
+          if (rowDate < startDate || rowDate > endDate) return;
+        }
+        const key = row[groupBy];
+        counts[key] = (counts[key] || 0) + 1;
+      });
+
+      const sorted = Object.entries(counts)
+        .sort((a, b) => b[1] - a[1]);
+      return sorted.map(([name, value], index) => ({ name, value, stt: index + 1 }));
+    };
+
+    const aggregateDomesticInternational = (data, startDate = null, endDate = null) => {
+      let domestic = 0, international = 0;
+      data.forEach(row => {
+        const rowDate = row.date;
+        if (startDate && endDate) {
+          if (rowDate < startDate || rowDate > endDate) return;
+        }
+        if (row.isDomestic) domestic++;
+        if (row.isInternational) international++;
+      });
+      return [
+        { name: 'Nội địa', value: domestic, stt: 1 },
+        { name: 'Quốc tế', value: international, stt: 2 }
+      ].filter(item => item.value > 0);
+    };
+
+    const getTopInternationalCityAndCountry = (data, startDate = null, endDate = null) => {
+      const cityCounts = {};
+      const countryCounts = {};
+      const cityToCountry = {};
+
+      data.forEach(row => {
+        const rowDate = row.date;
+        if (startDate && endDate) {
+          if (rowDate < startDate || rowDate > endDate) return;
+        }
+        if (row.isInternational) {
+          const city = row.city;
+          const country = row.country;
+          cityCounts[city] = (cityCounts[city] || 0) + 1;
+          countryCounts[country] = (countryCounts[country] || 0) + 1;
+          cityToCountry[city] = country;
+        }
+      });
+
+      const topCountryEntry = Object.entries(countryCounts).sort((a, b) => b[1] - a[1])[0];
+      const topCities = Object.entries(cityCounts)
+        .filter(([city]) => cityToCountry[city] === topCountryEntry?.[0])
+        .sort((a, b) => b[1] - a[1])
+        .map(([name, count]) => ({ name, count }));
+
+      const topCityEntry = Object.entries(cityCounts).sort((a, b) => b[1] - a[1])[0];
+      const topCity = topCityEntry ? { name: topCityEntry[0], count: topCityEntry[1], country: cityToCountry[topCityEntry[0]] } : null;
+
+      return {
+        topCity,
+        topCountry: topCountryEntry ? { name: topCountryEntry[0], count: topCountryEntry[1], cities: topCities } : null
+      };
+    };
+
+    const aggregateCharterCountries = (data, startDate = null, endDate = null) => {
+      const results = [];
+      const uniqueCountries = new Set();
+      data.forEach(row => {
+        const rowDate = row.date;
+        if (startDate && endDate) {
+          if (rowDate < startDate || rowDate > endDate) return;
+        }
+        if (row.isCharter) {
+          uniqueCountries.add(row.country);
+        }
+      });
+
+      Array.from(uniqueCountries).forEach((countryName, index) => {
+        const filtered = data.filter(row => row.country === countryName && row.isCharter && row.date >= (startDate || new Date(0)) && row.date <= (endDate || new Date()));
+        const total = filtered.length;
+        if (total > 0) {
+          results.push({
+            name: countryName,
+            value: total,
+            stt: index + 1
+          });
+        }
+      });
+      results.sort((a, b) => b.value - a.value);
+      results.forEach((item, index) => { item.stt = index + 1; });
+      return results;
+    };
+
+
+    const aggregateCountrySourceMap = (data, startDate, endDate, numDays) => {
+      const map = {};
+
+      data.forEach(row => {
+        if (row.date < startDate || row.date > endDate) return;
+        const country = row.country;
+        const city = row.city;
+        if (!row.isInternational) return;
+
+        if (!map[country]) {
+          map[country] = {
+            total: 0,
+            cities: {}
+          };
+        }
+
+        map[country].total += 1;
+        map[country].cities[city] = (map[country].cities[city] || 0) + 1;
+      });
+
+      return Object.entries(map)
+        .map(([country, info]) => {
+          const cityList = Object.entries(info.cities).sort((a, b) => b[1] - a[1]);
+          const topCities = cityList.slice(0, 3);
+          const extraCount = Math.max(0, cityList.length - topCities.length);
+
+          const cityText = topCities.map(([city, count]) => {
+            const avg = numDays > 0 ? Math.round(count / numDays) : 0;
+            return `${city} (≈ ${avg})`;
+          }).join(' / ');
+
+          return {
+            country,
+            total: info.total,
+            avg: numDays > 0 ? Math.round(info.total / numDays) : 0,
+            cityText: extraCount > 0 ? `${cityText} / +${extraCount} city khác` : cityText
+          };
+        })
+        .sort((a, b) => b.total - a.total)
+        .map((item, index) => ({
+          ...item,
+          stt: index + 1
+        }));
+    };
+
+    const getCurrentMonthSheetName = (date) => {
+      const monthNames = ['Tháng 01', 'Tháng 02', 'Tháng 03', 'Tháng 04', 'Tháng 05', 'Tháng 06',
+                          'Tháng 07', 'Tháng 08', 'Tháng 09', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+      return monthNames[date.getUTCMonth()] + ' ' + date.getUTCFullYear();
+    };
+
+    const aggregateFlightsByDate = (data, startDate, endDate) => {
+      const counts = {};
+      const domesticCounts = {};
+      const internationalCounts = {};
+      data.forEach(row => {
+        const rowDate = dateKey(row.date);
+        if (row.date >= startDate && row.date <= endDate) {
+          counts[rowDate] = (counts[rowDate] || 0) + 1;
+          if (row.isDomestic) domesticCounts[rowDate] = (domesticCounts[rowDate] || 0) + 1;
+          if (row.isInternational) internationalCounts[rowDate] = (internationalCounts[rowDate] || 0) + 1;
+        }
+      });
+      return Object.keys(counts).sort().map(date => ({
+        date: date,
+        totalFlights: counts[date],
+        domesticFlights: domesticCounts[date] || 0,
+        internationalFlights: internationalCounts[date] || 0
+      }));
+    };
+
+    const getTrailingWindow = (endDate, days) => {
+      const end = new Date(endDate);
+      end.setUTCHours(23,59,59,999);
+      const start = new Date(end);
+      start.setUTCDate(end.getUTCDate() - (days - 1));
+      start.setUTCHours(0,0,0,0);
+      return { start, end };
+    };
+
+    const getPreviousWindow = (currentStart, days) => {
+      const end = new Date(currentStart);
+      end.setUTCDate(end.getUTCDate() - 1);
+      end.setUTCHours(23,59,59,999);
+      const start = new Date(end);
+      start.setUTCDate(end.getUTCDate() - (days - 1));
+      start.setUTCHours(0,0,0,0);
+      return { start, end };
+    };
+
+    const hasDailyCoverage = (series, start, end) => {
+      const keys = new Set(series.map(day => day.date));
+      for (let time = Number(start); time <= Number(end); time += DAY_MS) {
+        if (!keys.has(dateKey(new Date(time)))) return false;
+      }
+      return true;
+    };
+
+    const aggregateWindowCounts = (rows, groupBy, startDate, endDate, filterFn = null) => {
+      const counts = {};
+      rows.forEach(row => {
+        if (filterFn && !filterFn(row)) return;
+        if (row.date < startDate || row.date > endDate) return;
+        const key = row[groupBy];
+        if (!key) return;
+        counts[key] = (counts[key] || 0) + 1;
+      });
+      return counts;
+    };
+
+    const getWindowMovers = (rows, groupBy, endDate, filterFn = null, options = {}) => {
+      const settings = {
+        minPresence: 10,
+        minAbsDelta: 3,
+        minPct: 0.10,
+        limit: 3,
+        ...options
+      };
+      const current = getTrailingWindow(endDate, TREND_WINDOW);
+      const previous = getPreviousWindow(current.start, TREND_WINDOW);
+      const currentCounts = aggregateWindowCounts(rows, groupBy, current.start, current.end, filterFn);
+      const previousCounts = aggregateWindowCounts(rows, groupBy, previous.start, previous.end, filterFn);
+      const keys = new Set([...Object.keys(currentCounts), ...Object.keys(previousCounts)]);
+      const results = Array.from(keys).map(name => {
+        const currentValue = currentCounts[name] || 0;
+        const previousValue = previousCounts[name] || 0;
+        const delta = currentValue - previousValue;
+        const pct = previousValue === 0 ? null : delta / previousValue;
+        const maxWindowValue = Math.max(currentValue, previousValue);
+        return { name, currentValue, previousValue, delta, pct, total: currentValue + previousValue, maxWindowValue };
+      }).filter(item => item.maxWindowValue >= settings.minPresence && Math.abs(item.delta) >= settings.minAbsDelta && (item.pct === null || Math.abs(item.pct) >= settings.minPct));
+
+      const up = [...results].filter(item => item.delta > 0).sort((a,b) => (b.delta - a.delta) || (b.pct - a.pct) || (b.currentValue - a.currentValue)).slice(0, settings.limit);
+      const down = [...results].filter(item => item.delta < 0).sort((a,b) => (a.delta - b.delta) || (a.pct - b.pct) || (b.previousValue - a.previousValue)).slice(0, settings.limit);
+      return { up, down, current, previous, settings };
+    };
+    const App = () => {
+      const [today] = useState(airportToday);
+      const [data, setData] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [sheetUrl, setSheetUrl] = useState('https://docs.google.com/spreadsheets/d/e/2PACX-1vSCxWcOum9YRkT2GVTri0K13drPhagUXCJd93mWGIiZvoXnn9gvvMv-o-KLu3bvFZGYSsegG4p7DKPs/pub?gid=0&single=true&output=csv');
+      const [startDate, setStartDate] = useState(today);
+      const [endDate, setEndDate] = useState(today);
+      const [language, setLanguage] = useState('vi');
+      const [showAllCis, setShowAllCis] = useState(false);
+      const [showAllCountry, setShowAllCountry] = useState(false);
+      const [showAllAirline, setShowAllAirline] = useState(false);
+      const [showAllCity, setShowAllCity] = useState(false);
+      const [showAllCountrySourceMap, setShowAllCountrySourceMap] = useState(false);
+      const [noDataMsg, setNoDataMsg] = useState('');
+      const [loadStats, setLoadStats] = useState(null);
+      const [dataMode, setDataMode] = useState('all');
+      const requestId = useRef(0);
+      const modeData = useMemo(() => {
+        if (dataMode === 'landed') return data.filter(row => row.landed && !row.planned);
+        if (dataMode === 'planned') return data.filter(row => row.planned);
+        return data;
+      }, [data, dataMode]);
+      const trendSeries = useMemo(() => {
+        if (!endDate) return [];
+        const period = getTrailingWindow(endDate, TREND_WINDOW * 2);
+        const trendRows = modeData.filter(row => !row.planned && row.date < today);
+        return aggregateFlightsByDate(trendRows, period.start, period.end);
+      }, [modeData, endDate, today]);
+
+      const translations = {
+        vi: {
+          title: 'THỐNG KÊ CHUYẾN BAY ĐẾN SÂN BAY QUỐC TẾ PHÚ QUỐC',
+          overviewTitle: 'TỔNG QUAN',
+          cisTitle: 'Charter Quốc Tế đến Phú Quốc',
+          cisDetailTitle: 'Danh sách Charter Quốc Tế đến Phú Quốc',
+          cisTotal: 'Tổng số chuyến bay: {total}',
+          more: 'Nhiều hơn',
+          less: 'Thu gọn',
+          noData: 'Không có Charter Quốc tế trong khoảng thời gian này.',
+          dateRange: 'Từ {start} đến {end}. Tổng cộng: {days} ngày.',
+          categoryHeader: 'Hạng mục',
+          detailHeader: 'Thông tin tóm tắt',
+          avgHeader: 'Bình quân/ngày',
+          sttHeader: 'STT',
+          countryHeader: 'Quốc gia',
+          dateHeader: 'Ngày',
+          airlineHeader: 'Hãng bay',
+          cityHeader: 'Thành phố',
+          timeHeader: 'Thời gian',
+          flightNoHeader: 'Số hiệu chuyến bay',
+          pie2: '1. Thống kê chuyến bay quốc tế',
+          pie4: '2. Thống kê chuyến bay theo Thành phố',
+          pie3: '3. Thống kê chuyến bay theo Hãng',
+          pie5: '4. Charter theo quy tắc phân loại',
+          list: 'Danh sách:',
+          stt: 'STT',
+          name: 'Tên',
+          flights: 'Số chuyến',
+          percentage: 'Tỷ lệ (%)',
+          reload: 'Tải lại dữ liệu',
+          urlPlaceholder: 'Nhập URL Google Sheets (CSV export)',
+          loading: 'Đang tải dữ liệu chuyến bay...',
+          fromDate: 'Từ ngày',
+          toDate: 'Đến ngày',
+          timeline: 'Xu hướng chuyến bay đến Phú Quốc | {start} → {end}',
+          noDataOverview: 'Không có số liệu chuyến bay cho giai đoạn đó.',
+          category1: 'Chuyến bay đến Phú Quốc',
+          moversTitle: 'Biến động 10 ngày gần nhất',
+          moversUp: 'Top tăng',
+          moversDown: 'Top giảm',
+          alertsTitle: 'Cơ hội & Rủi ro thị trường',
+          alertWarn: 'Cần chú ý',
+          alertGood: 'Điểm sáng',
+          noMover: 'Chưa có biến động đủ lớn.',
+          latest7: '10 ngày gần nhất',
+          prev7: '10 ngày trước',
+          noteMover: 'So sánh 10 ngày gần nhất với 10 ngày liền trước để nhận diện thay đổi nhanh.'
+        },
+        en: {
+          title: 'PHU QUOC INTERNATIONAL AIRPORT FLIGHT STATISTICS',
+          overviewTitle: 'OVERVIEW',
+          cisTitle: 'International Charter Flights to Phu Quoc',
+          cisDetailTitle: 'Detailed List of International Charter Flights to Phu Quoc',
+          cisTotal: 'Total flights: {total}',
+          more: 'More',
+          less: 'Less',
+          noData: 'No Charter flights in this time period.',
+          dateRange: 'From {start} to {end}. Total: {days} days.',
+          categoryHeader: 'Category',
+          detailHeader: 'Summary',
+          avgHeader: 'Average/day',
+          sttHeader: 'No.',
+          countryHeader: 'Country',
+          dateHeader: 'Date',
+          airlineHeader: 'Airline',
+          cityHeader: 'City',
+          timeHeader: 'Time',
+          flightNoHeader: 'Flight No',
+          pie2: '1. International Flight Statistics',
+          pie4: '2. Flight Statistics by City',
+          pie3: '3. Flight Statistics by Airline',
+          pie5: '4. Rule-based charter classification',
+          list: 'List:',
+          stt: 'No.',
+          name: 'Name',
+          flights: 'Flights',
+          percentage: 'Percentage (%)',
+          reload: 'Reload data',
+          urlPlaceholder: 'Enter Google Sheets URL (CSV export)',
+          loading: 'Loading flight data...',
+          fromDate: 'From date',
+          toDate: 'To date',
+          timeline: 'Flight trend to Phu Quoc | {start} → {end}',
+          noDataOverview: 'No flight data for that period.',
+          category1: 'Flights to Phu Quoc',
+          moversTitle: 'Latest 10-day movers',
+          moversUp: 'Top gainers',
+          moversDown: 'Top decliners',
+          alertsTitle: 'Market Opportunities & Risks',
+          alertWarn: 'Watch',
+          alertGood: 'Highlight',
+          noMover: 'No material move yet.',
+          latest7: 'Latest 10 days',
+          prev7: 'Previous 10 days',
+          noteMover: 'Comparing the latest 10 days with the immediately previous 10 days.'
+        }
+      };
+
+      const t = (key, params = {}) => {
+        let text = translations[language][key] || key;
+        Object.keys(params).forEach(p => {
+          text = text.replace(new RegExp(`{${p}}`, 'g'), params[p]);
+        });
+        return text;
+      };
+
+      const loadData = (url) => {
+        const id = ++requestId.current;
+        setLoading(true);
+        setNoDataMsg('');
+        setLoadStats(null);
+
+        const fail = (message) => {
+          if (id !== requestId.current) return;
+          setData([]);
+          setNoDataMsg(message);
+          setLoading(false);
+        };
+
+        Papa.parse(url, {
+          download: true,
+          header: true,
+          skipEmptyLines: 'greedy',
+          transformHeader: header => header.replace(/^﻿/, '').trim(),
+          complete: (results) => {
+            if (id !== requestId.current) return;
+            const headers = results.meta.fields || [];
+            if (!['Ngày', 'Thành phố', 'Quốc gia'].every(header => headers.includes(header))) {
+              fail('CSV thiếu cột Ngày, Thành phố hoặc Quốc gia. Kiểm tra link xuất CSV của T10.');
+              return;
+            }
+            const { rows, invalidDates, duplicates } = processAndCleanData(results.data);
+            setData(rows);
+            setLoadStats({ invalidDates, duplicates, csvErrors: results.errors.length });
+            setLoading(false);
+          },
+          error: () => fail('Lỗi tải dữ liệu. Kiểm tra link CSV đã xuất bản của T10.')
+        });
+      };
+
+      useEffect(() => {
+        loadData(sheetUrl);
+        // Load the default source once. Edits are applied with the reload button.
+      }, []);
+
+      const handleReload = () => {
+        const url = sheetUrl.trim();
+        if (/^https:\/\/docs\.google\.com\/spreadsheets\//i.test(url)) {
+          loadData(url);
+        } else {
+          setNoDataMsg('Vui lòng nhập link CSV Google Sheets hợp lệ.');
+        }
+      };
+
+      const handleUrlChange = (e) => setSheetUrl(e.target.value);
+
+      const getCharterDetailText = (item) => {
+        const unit = language === 'vi' ? 'chuyến' : 'flights';
+        return language === 'vi' ? `${item.value} ${unit}. Bay từ:` : `${item.value} ${unit}. From:`;
+      };
+
+      const renderAnimatedTable = (rows, headers) => {
+        return (
+          <div className="table-container">
+            <table className="responsive-table w-full text-left border-collapse border border-gray-300 text-sm">
+              <thead>
+                <tr className="bg-gray-200">
+                  {headers.map((header, idx) => (
+                    <th key={idx} className="border border-gray-300 font-bold">{header}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, index) => (
+                  <tr key={index} className="animate-row border-t border-gray-300">
+                    {row.map((cell, cellIdx) => (
+                      <td key={cellIdx} className="border border-gray-300 text-gray-800">{cell}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      };
+
+      const formatNumber = (num) => {
+        return num.toLocaleString('vi-VN');
+      };
+
+      
+      const getTrendMeta = (currentAvg, previousAvg, tolerancePct = 0.03) => {
+        const base = previousAvg || currentAvg || 0;
+        const delta = currentAvg - previousAvg;
+        const pct = base === 0 ? 0 : delta / base;
+        if (pct > tolerancePct) return { key: 'up', arrow: '▲', text: 'đang tăng', className: 'up' };
+        if (pct < -tolerancePct) return { key: 'down', arrow: '▼', text: 'đang giảm', className: 'down' };
+        return { key: 'flat', arrow: '→', text: 'đi ngang', className: 'flat' };
+      };
+
+      const hasTrendCoverage = endDate && hasDailyCoverage(
+        trendSeries, getTrailingWindow(endDate, TREND_WINDOW * 2).start, endDate
+      );
+      const insufficientTrend = language === 'vi' ? 'Chưa đủ dữ liệu so sánh' : 'Insufficient comparison data';
+
+      const getSeriesTrendFromFlights = (key) => {
+        if (!hasTrendCoverage) return { key: 'missing', arrow: '', text: insufficientTrend, className: 'flat' };
+        const avg = rows => rows.reduce((sum, day) => sum + day[key], 0) / TREND_WINDOW;
+        const currentAvg = avg(trendSeries.slice(-TREND_WINDOW));
+        const previousAvg = avg(trendSeries.slice(0, TREND_WINDOW));
+        return { currentAvg, previousAvg, ...getTrendMeta(currentAvg, previousAvg) };
+      };
+
+      const buildExecutiveInsight = (totalTrend, domesticPct, intlPct, charterPct, peakValue, lowValue) => {
+        const parts = [];
+        if (totalTrend.key === 'up') parts.push('Tổng chuyến đang tăng');
+        else if (totalTrend.key === 'down') parts.push('Tổng chuyến đang giảm');
+        else if (totalTrend.key === 'flat') parts.push('Tổng chuyến đang đi ngang');
+        else parts.push(insufficientTrend);
+
+        if (domesticPct === 0 && intlPct === 0) parts.push('Chưa đủ dữ liệu phân loại nội địa và quốc tế');
+        else if (domesticPct > intlPct) parts.push(`nội địa chiếm ưu thế ${domesticPct}% so với quốc tế ${intlPct}%`);
+        else if (intlPct > domesticPct) parts.push(`quốc tế chiếm ưu thế ${intlPct}% so với nội địa ${domesticPct}%`);
+        else parts.push(`nội địa và quốc tế cân bằng ${domesticPct}%/${intlPct}%`);
+
+        if (charterPct >= 15) parts.push(`charter ở mức cao (${charterPct}% tổng chuyến)`);
+        else if (charterPct >= 8) parts.push(`tỷ trọng charter (${charterPct}% tổng chuyến)`);
+        else parts.push(`charter ở mức thấp (${charterPct}% tổng chuyến)`);
+
+        if (peakValue && lowValue) parts.push(`biên dao động ngày từ ${lowValue} đến ${peakValue} chuyến`);
+
+        return parts.join('; ') + '.';
+      };
+
+      const renderExecutiveSummary = () => {
+        const totalDomesticIntl = domesticInternational.reduce((sum, item) => sum + item.value, 0);
+        const domesticValue = domesticInternational.find(item => item.name === 'Nội địa')?.value || 0;
+        const internationalValue = domesticInternational.find(item => item.name === 'Quốc tế')?.value || 0;
+        const charterValue = charterCountries.reduce((sum, item) => sum + item.value, 0);
+
+        const domesticPct = totalDomesticIntl > 0 ? Math.round((domesticValue / totalDomesticIntl) * 100) : 0;
+        const intlPct = totalDomesticIntl > 0 ? Math.round((internationalValue / totalDomesticIntl) * 100) : 0;
+        const charterPct = totalFlights > 0 ? Math.round((charterValue / totalFlights) * 100) : 0;
+        const avgTotalPerDay = numDays > 0 ? Math.round(totalFlights / numDays) : 0;
+        const avgCharterPerDay = numDays > 0 ? Math.round(charterValue / numDays) : 0;
+
+        const flightsByDate = aggregateFlightsByDate(filteredData, startDate, endDate);
+        const totalTrend = getSeriesTrendFromFlights('totalFlights');
+
+        const avgSuffix = language === 'vi' ? 'chuyến/ngày' : 'flights/day';
+
+        const peakDay = flightsByDate.length ? flightsByDate.reduce((max, item) => item.totalFlights > max.totalFlights ? item : max, flightsByDate[0]) : null;
+        const lowDay = flightsByDate.length ? flightsByDate.reduce((min, item) => item.totalFlights < min.totalFlights ? item : min, flightsByDate[0]) : null;
+        const fmtDate = date => formatDate(parseDate(date));
+
+        const executiveInsight = buildExecutiveInsight(
+          totalTrend,
+          domesticPct,
+          intlPct,
+          charterPct,
+          peakDay ? peakDay.totalFlights : 0,
+          lowDay ? lowDay.totalFlights : 0
+        );
+
+        return (
+          <div className="master-overview-wrap">
+            <div className="master-overview-header">
+              <div>
+                <h2 className="master-overview-title">Tổng quan (Executive Summary)</h2>
+                <div className="master-overview-sub">{executiveInsight}</div>
+              </div>
+              <div className="master-chip">{formatNumber(totalFlights)} chuyến | {numDays} ngày</div>
+            </div>
+
+            <div className="master-kpi-grid">
+              <div className="master-kpi-card blue">
+                <div className="master-kpi-label">Tổng chuyến bay</div>
+                <div className="master-kpi-value">{formatNumber(totalFlights)}</div>
+                <div className="master-kpi-meta">Bình quân ≈ {avgTotalPerDay} {avgSuffix}</div>
+              </div>
+
+              <div className="master-kpi-card green">
+                <div className="master-kpi-label">Nội địa vs Quốc tế</div>
+                <div className="master-kpi-value">{domesticPct}% / {intlPct}%</div>
+                <div className="master-kpi-meta">Nội địa: {formatNumber(domesticValue)} chuyến<br/>Quốc tế: {formatNumber(internationalValue)} chuyến</div>
+              </div>
+
+              <div className="master-kpi-card amber">
+                <div className="master-kpi-label">Charter theo quy tắc</div>
+                <div className="master-kpi-value">{formatNumber(charterValue)}</div>
+                <div className="master-kpi-meta">Chiếm {charterPct}% tổng chuyến<br/>Bình quân ≈ {avgCharterPerDay} {avgSuffix}</div>
+              </div>
+
+              <div className="master-kpi-card slate">
+                <div className="master-kpi-label">Peak day</div>
+                <div className="master-kpi-value">{peakDay ? formatNumber(peakDay.totalFlights) : '-'}</div>
+                <div className="master-kpi-meta">{peakDay ? `${fmtDate(peakDay.date)} | ≈ ${peakDay.totalFlights} chuyến` : '-'}</div>
+              </div>
+
+              <div className="master-kpi-card slate">
+                <div className="master-kpi-label">Low day</div>
+                <div className="master-kpi-value">{lowDay ? formatNumber(lowDay.totalFlights) : '-'}</div>
+                <div className="master-kpi-meta">{lowDay ? `${fmtDate(lowDay.date)} | ≈ ${lowDay.totalFlights} chuyến` : '-'}</div>
+              </div>
+            </div>
+          </div>
+        );
+      };
+      const renderInsightLite = () => {
+        if (numDays < 7) return null;
+        if (!hasTrendCoverage) {
+          return <div className="insight-shell">{insufficientTrend}</div>;
+        }
+        const recentRows = modeData.filter(row => !row.planned && row.date < today);
+
+        const smartFilter = { minPresence: 10, minAbsDelta: 3, minPct: 0.10, limit: 3 };
+        const intlMovers = getWindowMovers(recentRows, 'country', endDate, row => row.isInternational && row.country !== 'Vietnam', smartFilter);
+        const cityMovers = getWindowMovers(recentRows, 'city', endDate, null, smartFilter);
+        const charterMovers = getWindowMovers(recentRows, 'country', endDate, row => row.isCharter, smartFilter);
+
+        const labelMap = {
+          country: { icon: '🌐', vi: 'Quốc gia', en: 'Country' },
+          city: { icon: '📍', vi: 'Thành phố', en: 'City' },
+          charter: { icon: '✈', vi: 'Charter', en: 'Charter' }
+        };
+
+        const displayName = (item, groupKey) => {
+          if (groupKey === 'country' || groupKey === 'charter') return withCountryFlag(item.name);
+          return item.name;
+        };
+
+        const groupOrderMap = { country: 1, city: 2, charter: 3 };
+        const tagItem = (item, groupKey) => ({
+          ...item,
+          name: displayName(item, groupKey),
+          groupKey,
+          groupOrder: groupOrderMap[groupKey],
+          source: `${groupKey === 'country' || groupKey === 'charter' ? getCountryFlag(item.name) + ' ' : labelMap[groupKey].icon + ' '}${language === 'vi' ? labelMap[groupKey].vi : labelMap[groupKey].en}`
+        });
+
+        const cityCountryMap = filteredData.reduce((acc, row) => {
+          if (row.city && !acc[row.city]) acc[row.city] = row.country;
+          return acc;
+        }, {});
+
+        const dedupeCharterAgainstCountry = (countryItems, charterItems) => {
+          const countryNames = new Set(countryItems.map(item => item.name));
+          return charterItems.filter(item => !countryNames.has(item.name));
+        };
+
+        const dedupeCityAgainstCountry = (countryItems, cityItems) => {
+          const countryNames = new Set(countryItems.map(item => item.name));
+          return cityItems.filter(item => {
+            const mappedCountry = cityCountryMap[item.name];
+            return !mappedCountry || !countryNames.has(mappedCountry);
+          });
+        };
+
+        const uniqueCityUp = dedupeCityAgainstCountry(intlMovers.up, cityMovers.up);
+        const uniqueCityDown = dedupeCityAgainstCountry(intlMovers.down, cityMovers.down);
+        const uniqueCharterUp = dedupeCharterAgainstCountry(intlMovers.up, charterMovers.up);
+        const uniqueCharterDown = dedupeCharterAgainstCountry(intlMovers.down, charterMovers.down);
+
+        const combineByPriority = (collections) => collections.flatMap(({ key, items }) => items.map(item => tagItem(item, key))).slice(0, 3);
+
+        const combineUp = combineByPriority([
+          { key: 'country', items: intlMovers.up },
+          { key: 'city', items: uniqueCityUp },
+          { key: 'charter', items: uniqueCharterUp }
+        ]);
+
+        const combineDown = combineByPriority([
+          { key: 'country', items: intlMovers.down },
+          { key: 'city', items: uniqueCityDown },
+          { key: 'charter', items: uniqueCharterDown }
+        ]);
+
+        const warnAlerts = [];
+        const goodAlerts = [];
+        const maybePush = (bucket, kind, badgeClass, main, sub, score, groupKey, dedupeKey = '') => bucket.push({ kind, badgeClass, main, sub, score, groupOrder: groupOrderMap[groupKey], dedupeKey });
+        const sortAlertBucket = (bucket) => bucket.sort((a, b) => a.groupOrder - b.groupOrder || b.score - a.score);
+        const groupLabel = (groupKey, countryName = '') => {
+          if (groupKey === 'country') return `${getCountryFlag(countryName)} ${language === 'vi' ? labelMap[groupKey].vi : labelMap[groupKey].en}`;
+          if (groupKey === 'charter') return `${getCountryFlag(countryName)} ${language === 'vi' ? labelMap[groupKey].vi : labelMap[groupKey].en}`;
+          return `${labelMap[groupKey].icon} ${language === 'vi' ? labelMap[groupKey].vi : labelMap[groupKey].en}`;
+        };
+
+        const biggestIntlDrop = intlMovers.down[0];
+        if (biggestIntlDrop) {
+          maybePush(warnAlerts, t('alertWarn'), 'warn', `${withCountryFlag(biggestIntlDrop.name)} giảm mạnh ${Math.abs(Math.round(biggestIntlDrop.pct*100))}%`, `${t('latest7')}: ${biggestIntlDrop.currentValue} | ${t('prev7')}: ${biggestIntlDrop.previousValue} • Nhóm: ${groupLabel('country', biggestIntlDrop.name)}`, Math.abs(biggestIntlDrop.delta) + Math.abs(biggestIntlDrop.pct*100), 'country', `drop:${biggestIntlDrop.name}`);
+        }
+
+        const biggestCityDrop = uniqueCityDown[0];
+        if (biggestCityDrop) {
+          maybePush(warnAlerts, t('alertWarn'), 'warn', `${biggestCityDrop.name} giảm ${Math.abs(Math.round(biggestCityDrop.pct*100))}%`, `${t('latest7')}: ${biggestCityDrop.currentValue} | ${t('prev7')}: ${biggestCityDrop.previousValue} • Nhóm: ${groupLabel('city')}`, Math.abs(biggestCityDrop.delta) + Math.abs(biggestCityDrop.pct*100), 'city', `drop-city:${biggestCityDrop.name}`);
+        }
+
+        const biggestCharterDrop = uniqueCharterDown[0];
+        if (biggestCharterDrop) {
+          maybePush(warnAlerts, t('alertWarn'), 'warn', `Charter ${withCountryFlag(biggestCharterDrop.name)} giảm ${Math.abs(Math.round(biggestCharterDrop.pct*100))}%`, `${t('latest7')}: ${biggestCharterDrop.currentValue} | ${t('prev7')}: ${biggestCharterDrop.previousValue} • Nhóm: ${groupLabel('charter', biggestCharterDrop.name)}`, Math.abs(biggestCharterDrop.delta) + Math.abs(biggestCharterDrop.pct*100), 'charter', `drop:${biggestCharterDrop.name}`);
+        }
+
+        const bestIntlUp = intlMovers.up[0];
+        if (bestIntlUp) {
+          maybePush(goodAlerts, t('alertGood'), 'good', `${withCountryFlag(bestIntlUp.name)} ${bestIntlUp.pct === null ? (language === 'vi' ? 'phát sinh mới' : 'new activity') : `tăng ${Math.round(bestIntlUp.pct * 100)}%`}`, `${t('latest7')}: ${bestIntlUp.currentValue} | ${t('prev7')}: ${bestIntlUp.previousValue} • Nhóm: ${groupLabel('country', bestIntlUp.name)}`, Math.abs(bestIntlUp.delta) + Math.abs(bestIntlUp.pct*100), 'country', `up:${bestIntlUp.name}`);
+        }
+
+        const bestCityUp = uniqueCityUp[0];
+        if (bestCityUp) {
+          maybePush(goodAlerts, t('alertGood'), 'good', `${bestCityUp.name} ${bestCityUp.pct === null ? (language === 'vi' ? 'phát sinh mới' : 'new activity') : `tăng ${Math.round(bestCityUp.pct * 100)}%`}`, `${t('latest7')}: ${bestCityUp.currentValue} | ${t('prev7')}: ${bestCityUp.previousValue} • Nhóm: ${groupLabel('city')}`, Math.abs(bestCityUp.delta) + Math.abs(bestCityUp.pct*100), 'city', `up-city:${bestCityUp.name}`);
+        }
+
+        const bestCharterUp = uniqueCharterUp[0];
+        if (bestCharterUp) {
+          maybePush(goodAlerts, t('alertGood'), 'good', `Charter ${withCountryFlag(bestCharterUp.name)} ${bestCharterUp.pct === null ? (language === 'vi' ? 'phát sinh mới' : 'new activity') : `tăng ${Math.round(bestCharterUp.pct * 100)}%`}`, `${t('latest7')}: ${bestCharterUp.currentValue} | ${t('prev7')}: ${bestCharterUp.previousValue} • Nhóm: ${groupLabel('charter', bestCharterUp.name)}`, Math.abs(bestCharterUp.delta) + Math.abs(bestCharterUp.pct*100), 'charter', `up:${bestCharterUp.name}`);
+        }
+
+        const dedupeAlerts = (items) => {
+          const seen = new Set();
+          return items.filter(item => {
+            const key = item.dedupeKey || `${item.groupOrder}:${item.main}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+        };
+
+        const positiveAlerts = dedupeAlerts(sortAlertBucket(goodAlerts)).slice(0, 2);
+        const negativeAlerts = dedupeAlerts(sortAlertBucket(warnAlerts)).slice(0, 2);
+
+        const renderMoverList = (items, type='up') => {
+          if (!items.length) return <div className="mini-note">{t('noMover')}</div>;
+          return (
+            <div className="mover-list">
+              {items.map((item, idx) => (
+                <div className="mover-item" key={`${type}-${idx}-${item.name}`}>
+                  <div>
+                    <div className="mover-name">{item.name}</div>
+                    <div className="mover-meta">{item.source} • {t('latest7')}: {item.currentValue} | {t('prev7')}: {item.previousValue}</div>
+                  </div>
+                  <div className={`mover-value ${type === 'up' ? 'mover-up' : 'mover-down'}`}>
+                    {type === 'up' ? '+' : ''}{item.delta} ({item.pct === null ? (language === 'vi' ? 'Phát sinh mới' : 'New activity') : `${type === 'up' ? '+' : ''}${Math.round(item.pct * 100)}%`})
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        };
+
+        return (
+          <div className="insight-shell">
+            <div className="insight-shell-title">{t('alertsTitle')}</div>
+            <div className="insight-grid insight-grid-single">
+              <div className="insight-card insight-card-compact">
+                <div className="alert-col-title">{t('alertGood')}</div>
+                <div className="alert-list">
+                  {positiveAlerts.length ? positiveAlerts.map((alert, idx) => (
+                    <div className="alert-item" key={`good-${idx}`}>
+                      <span className={`alert-badge ${alert.badgeClass}`}>{alert.kind}</span>
+                      <div>
+                        <div className="alert-main">{alert.main}</div>
+                        <div className="alert-sub">{alert.sub}</div>
+                      </div>
+                    </div>
+                  )) : <div className="mini-note">{t('noMover')}</div>}
+                </div>
+              </div>
+              <div className="insight-card insight-card-compact insight-col-divider">
+                <div className="alert-col-title">{t('alertWarn')}</div>
+                <div className="alert-list">
+                  {negativeAlerts.length ? negativeAlerts.map((alert, idx) => (
+                    <div className="alert-item" key={`warn-${idx}`}>
+                      <span className={`alert-badge ${alert.badgeClass}`}>{alert.kind}</span>
+                      <div>
+                        <div className="alert-main">{alert.main}</div>
+                        <div className="alert-sub">{alert.sub}</div>
+                      </div>
+                    </div>
+                  )) : <div className="mini-note">{t('noMover')}</div>}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+
+      const renderCharterFlightList = (rows) => {
+        const charterRows = rows
+          .filter(row => row.isCharter && row.isInternational && row.date >= startDate && row.date <= endDate)
+          .sort((a, b) => {
+            const dateDiff = b.date - a.date;
+            if (dateDiff !== 0) return dateDiff;
+            const cityDiff = (a.city || '').localeCompare(b.city || '', 'en');
+            if (cityDiff !== 0) return cityDiff;
+            return (a.flightNo || '').localeCompare(b.flightNo || '', 'en');
+          });
+
+        if (!charterRows.length) return null;
+
+        const displayRows = showAllCis ? charterRows : charterRows.slice(0, 5);
+
+        return (
+          <div className="stats-block">
+            <div className="stats-block-header">
+              <h3 className="stats-block-title">5. {t('cisDetailTitle')}</h3>
+            </div>
+            <div className="table-container">
+              <table className="responsive-table w-full text-left border-collapse border border-gray-300 text-sm">
+                <thead>
+                  <tr className="bg-gray-200">
+                    <th className="border border-gray-300 font-bold">{t('sttHeader')}</th>
+                    <th className="border border-gray-300 font-bold">{t('dateHeader')}</th>
+                    <th className="border border-gray-300 font-bold">{t('airlineHeader')}</th>
+                    <th className="border border-gray-300 font-bold">{t('cityHeader')}</th>
+                    <th className="border border-gray-300 font-bold">{t('countryHeader')}</th>
+                    <th className="border border-gray-300 font-bold">{t('flightNoHeader')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayRows.map((row, idx) => (
+                    <tr key={`charter-row-${idx}`} className="animate-row border-t border-gray-300">
+                      <td className="border border-gray-300 text-gray-800">{idx + 1}</td>
+                      <td className="border border-gray-300 text-gray-800">{formatDate(row.date)}</td>
+                      <td className="border border-gray-300 text-gray-800">{row.airline}</td>
+                      <td className="border border-gray-300 text-gray-800">{row.city}</td>
+                      <td className="border border-gray-300 text-gray-800">{withCountryFlag(row.country)}</td>
+                      <td className="border border-gray-300 text-gray-800">
+                        {row.flightNo} · {row.time || (language === 'vi' ? 'Chưa có giờ' : 'Time unavailable')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {charterRows.length > 5 && (
+              <button className="more-btn" onClick={() => setShowAllCis(!showAllCis)}>
+                {showAllCis ? t('less') : t('more')}
+              </button>
+            )}
+          </div>
+        );
+      };
+
+
+      const renderCountrySourceMap = (rows) => {
+        if (!rows.length) return null;
+
+        const displayRows = showAllCountrySourceMap ? rows : rows.slice(0, 5);
+
+        return (
+          <div className="stats-block">
+            <h3 className="stats-block-title">1. Thống kê chuyến bay theo Quốc gia</h3>
+
+            <div className="table-container">
+              <table className="responsive-table w-full text-left border-collapse border border-gray-300 pie-table">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="border border-gray-300 font-bold">STT</th>
+                    <th className="border border-gray-300 font-bold">Quốc gia</th>
+                    <th className="border border-gray-300 font-bold">Tổng chuyến</th>
+                    <th className="border border-gray-300 font-bold">Bình quân/ngày</th>
+                    <th className="border border-gray-300 font-bold">Thành phố nguồn</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayRows.map((item, index) => {
+                    const rowBg = index === 0 ? 'bg-blue-50' : index === 1 ? 'bg-sky-50' : index === 2 ? 'bg-emerald-50' : '';
+                    return (
+                      <tr key={`csm-${index}`} className={`border-t border-gray-300 ${rowBg}`}>
+                        <td className="border border-gray-300 font-semibold text-gray-700">{item.stt}</td>
+                        <td className="border border-gray-300 font-bold text-blue-600">{withCountryFlag(item.country)}</td>
+                        <td className="border border-gray-300 font-bold text-gray-800">{item.total}</td>
+                        <td className="border border-gray-300 text-gray-600 italic">≈ {item.avg}</td>
+                        <td className="border border-gray-300 text-gray-800">{item.cityText}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {rows.length > 5 && (
+              <button
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm mt-2"
+                onClick={() => setShowAllCountrySourceMap(!showAllCountrySourceMap)}
+              >
+                {showAllCountrySourceMap ? t('less') : t('more')}
+              </button>
+            )}
+
+            <div className="mini-note">Hiển thị top 3 thành phố nguồn mỗi quốc gia (≈ chuyến/ngày). Tô nền nhẹ top 3 quốc gia mạnh nhất.</div>
+          </div>
+        );
+      };
+
+      const renderStatsBlock = (data, title, key) => {
+        const total = data.reduce((sum, item) => sum + item.value, 0);
+        let displayData = data;
+        let showMoreBtn = false;
+        let showLessBtn = false;
+        let setShowAll = () => {};
+
+        if (key === 'country') {
+          displayData = showAllCountry ? data : data.slice(0, 5);
+          showMoreBtn = data.length > 5 && !showAllCountry;
+          showLessBtn = showAllCountry;
+          setShowAll = setShowAllCountry;
+        } else if (key === 'airline') {
+          displayData = showAllAirline ? data : data.slice(0, 5);
+          showMoreBtn = data.length > 5 && !showAllAirline;
+          showLessBtn = showAllAirline;
+          setShowAll = setShowAllAirline;
+        } else if (key === 'city') {
+          displayData = showAllCity ? data : data.slice(0, 5);
+          showMoreBtn = data.length > 5 && !showAllCity;
+          showLessBtn = showAllCity;
+          setShowAll = setShowAllCity;
+        } else if (key === 'charter') {
+          displayData = showAllCis ? data : data.slice(0, 5);
+          showMoreBtn = data.length > 5 && !showAllCis;
+          showLessBtn = showAllCis;
+          setShowAll = setShowAllCis;
+        }
+
+        const chartHeight = 300;
+        const outerRadius = 92;
+        const innerRadius = 50;
+        const initialRows = 7;
+
+        const tableRows = (() => {
+          if (showLessBtn) return displayData;
+          const rows = [...displayData];
+          if (rows.length === 5) {
+            rows.push({ stt: 6, name: 'Others', value: Math.max(0, total - rows.reduce((s, i) => s + i.value, 0)), placeholder: false });
+          }
+          while (rows.length < initialRows) {
+            rows.push({ stt: rows.length + 1, name: '', value: '', percentageText: '', placeholder: true });
+          }
+          return rows;
+        })();
+
+        const customLabel = (entry) => {
+          const percentage = total > 0 ? Math.round((entry.value / total) * 100) : 0;
+          const shortName = entry.name.length > 14 ? `${entry.name.slice(0, 14)}…` : entry.name;
+          return percentage >= 4 ? `${shortName} ${percentage}%` : shortName;
+        };
+
+        return (
+          <div className="stats-block">
+            <h3 className="stats-block-title">{title}</h3>
+            {data.length === 0 ? (
+              <div className="stats-empty">{t('noData')}</div>
+            ) : (
+              <>
+                <div className="stats-block-grid">
+                  <div>
+                    <div className="stats-table-wrap">
+                      <table className="responsive-table w-full text-left border-collapse border border-gray-300 pie-table">
+                        <thead>
+                          <tr className="bg-gray-100">
+                            <th className="border border-gray-300 font-bold">{t('stt')}</th>
+                            <th className="border border-gray-300 font-bold">{t('name')}</th>
+                            <th className="border border-gray-300 font-bold">{t('flights')}</th>
+                            <th className="border border-gray-300 font-bold italic">{t('percentage')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {tableRows.map((item, index) => {
+                            if (item.placeholder) {
+                              return (
+                                <tr key={`${key}-placeholder-${index}`} className="border-t border-gray-300">
+                                  <td className="border border-gray-300 text-gray-300">{item.stt}</td>
+                                  <td className="border border-gray-300 text-gray-200">&nbsp;</td>
+                                  <td className="border border-gray-300 text-gray-200">&nbsp;</td>
+                                  <td className="border border-gray-300 text-gray-200">&nbsp;</td>
+                                </tr>
+                              );
+                            }
+                            const percentage = item.percentageText !== undefined && item.percentageText !== ''
+                              ? item.percentageText
+                              : (total > 0 ? Math.round((item.value / total) * 100) : 0);
+                            const avg = typeof item.value === 'number' && numDays > 1 ? Math.round(item.value / numDays) : 0;
+                            return (
+                              <tr key={`${key}-${index}`} className="border-t border-gray-300">
+                                <td className="border border-gray-300 font-semibold text-gray-700">{item.stt || index + 1}</td>
+                                <td className={`border border-gray-300 font-bold ${item.name === 'Others' ? 'text-slate-500' : 'text-blue-600'}`}>{item.name}</td>
+                                <td className="border border-gray-300 font-semibold">
+                                  {item.value}
+                                  {typeof item.value === 'number' && numDays > 1 && avg >= 1 && <span className="text-sm text-gray-500 font-normal"> (≈ {avg} {avgText})</span>}
+                                </td>
+                                <td className={`border border-gray-300 italic ${item.name === 'Others' ? 'text-slate-500' : 'text-green-600'}`}>{percentage === '' ? '' : `${percentage}%`}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {(showMoreBtn || showLessBtn) && (
+                      <div className="mt-2 flex gap-2">
+                        {showMoreBtn && (
+                          <button
+                            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm"
+                            onClick={() => setShowAll(true)}
+                          >
+                            {t('more')}
+                          </button>
+                        )}
+                        {showLessBtn && (
+                          <button
+                            className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-1 px-3 rounded text-sm"
+                            onClick={() => setShowAll(false)}
+                          >
+                            {t('less')}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="stats-chart-wrap">
+                    <ResponsiveContainer width="100%" height={chartHeight}>
+                      <PieChart>
+                        <Pie
+                          data={displayData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={outerRadius}
+                          innerRadius={innerRadius}
+                          label={customLabel}
+                          labelLine={false}
+                        >
+                          {displayData.map((entry, index) => (
+                            <Cell key={`chart-${key}-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip className="custom-tooltip" />
+                        <Legend className="custom-legend" />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        );
+      };
+
+      const renderLineChart = (data, title) => {
+        const enrichedData = data.map((item, index, arr) => {
+          const trendWindow = arr.slice(Math.max(0, index - (TREND_WINDOW - 1)), index + 1);
+          const consecutive = trendWindow.length === TREND_WINDOW &&
+            parseDate(item.date) - parseDate(trendWindow[0].date) === (TREND_WINDOW - 1) * DAY_MS;
+          const ma10 = consecutive ? trendWindow.reduce((sum, d) => sum + d.totalFlights, 0) / TREND_WINDOW : null;
+
+          return {
+            ...item,
+            ma10: ma10 === null ? null : Math.round(ma10 * 10) / 10
+          };
+        });
+
+        const CustomTooltip = ({ active, payload, label }) => {
+          if (!active || !payload || !payload.length) return null;
+
+          return (
+            <div style={{
+              background: 'rgba(15,23,42,0.96)',
+              border: '1px solid rgba(148,163,184,0.25)',
+              borderRadius: '14px',
+              padding: '12px 14px',
+              boxShadow: '0 8px 28px rgba(0,0,0,0.18)',
+              color: '#fff',
+              minWidth: '180px'
+            }}>
+              <div style={{ fontWeight: 700, marginBottom: '8px', color: '#e2e8f0' }}>
+                {label}
+              </div>
+              {payload.map((entry, idx) => (
+                <div key={idx} style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  gap: '14px',
+                  fontSize: '13px',
+                  marginBottom: '4px'
+                }}>
+                  <span style={{ color: entry.color }}>{entry.name}</span>
+                  <strong>{entry.value}</strong>
+                </div>
+              ))}
+            </div>
+          );
+        };
+
+        return (
+          <div className="chart-premium-card">
+            <h3 className="chart-premium-title">{title}</h3>
+                        {(() => {
+              const totalTrend = getSeriesTrendFromFlights('totalFlights');
+              const domesticTrend = getSeriesTrendFromFlights('domesticFlights');
+              const intlTrend = getSeriesTrendFromFlights('internationalFlights');
+
+              return (
+                <>
+                  <div className="chart-signal-row">
+                    <span className={`chart-signal-pill chart-signal-${totalTrend.className}`}>Tổng chuyến {totalTrend.arrow} {totalTrend.text}</span>
+                    <span className={`chart-signal-pill chart-signal-${domesticTrend.className}`}>Nội địa {domesticTrend.arrow} {domesticTrend.text}</span>
+                    <span className={`chart-signal-pill chart-signal-${intlTrend.className}`}>Quốc tế {intlTrend.arrow} {intlTrend.text}</span>
+                  </div>
+
+                  <div className="chart-ma7-note">
+                    {hasTrendCoverage ? `MA${TREND_WINDOW} hiện tại ≈ ${Math.round(totalTrend.currentAvg)} chuyến/ngày · ${TREND_WINDOW} ngày trước ≈ ${Math.round(totalTrend.previousAvg)} chuyến/ngày` : insufficientTrend}
+                  </div>
+                </>
+              );
+            })()}
+            <ResponsiveContainer width="100%" height={400}>
+              <LineChart data={enrichedData} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                <defs>
+                  <linearGradient id="totalFlightsFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#4f46e5" stopOpacity={0.20} />
+                    <stop offset="100%" stopColor="#4f46e5" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+
+                <CartesianGrid strokeDasharray="4 4" stroke="rgba(148,163,184,0.22)" />
+                <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 12 }} tickLine={false} axisLine={{ stroke: 'rgba(148,163,184,0.25)' }} minTickGap={24} />
+                <YAxis tick={{ fill: '#64748b', fontSize: 12 }} tickLine={false} axisLine={false} width={44} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '13px' }} />
+
+                <Area type="monotone" dataKey="totalFlights" stroke="none" fill="url(#totalFlightsFill)" name="" legendType="none" />
+                <Line
+                  type="monotone"
+                  dataKey="totalFlights"
+                  stroke="#4f46e5"
+                  name="Tổng số chuyến"
+                  strokeWidth={3}
+                  dot={false}
+                  activeDot={{ r: 5, strokeWidth: 0, fill: '#4f46e5' }}
+                  label={(props) => {
+                    const { x, y, value, index } = props;
+                    const dataLength = enrichedData.length;
+
+                    if (index < dataLength - 20) return null;
+
+                    const isRecentWindow = index >= dataLength - TREND_WINDOW;
+
+                    return (
+                      <text
+                        x={x}
+                        y={y - 8}
+                        textAnchor="middle"
+                        fontSize="9"
+                        fontWeight="700"
+                        fill={isRecentWindow ? "#0f172a" : "#94a3b8"}
+                      >
+                        {value}
+                      </text>
+                    );
+                  }}
+                />
+                <Line type="monotone" dataKey="ma10" stroke="#ff6b8a" name={`MA${TREND_WINDOW}`} strokeWidth={2.5} strokeDasharray="6 6" dot={false} activeDot={{ r: 4, strokeWidth: 0, fill: '#ff6b8a' }} />
+                                <Line
+                  type="monotone"
+                  dataKey="domesticFlights"
+                  stroke="#10b981"
+                  name="Nội địa"
+                  strokeWidth={1.8}
+                  strokeOpacity={0.95}
+                  dot={false}
+                  activeDot={{ r: 4, strokeWidth: 0, fill: '#10b981' }}
+                  label={(props) => {
+                    const { x, y, value, index } = props;
+                    const dataLength = enrichedData.length;
+                    if (index < dataLength - TREND_WINDOW) return null;
+                    return (
+                      <text x={x} y={y - 8} textAnchor="middle" fontSize="8.5" fontWeight="600" fill="#10b981">
+                        {value}
+                      </text>
+                    );
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="internationalFlights"
+                  stroke="#f59e0b"
+                  name="Quốc tế"
+                  strokeWidth={1.8}
+                  strokeOpacity={0.95}
+                  dot={false}
+                  activeDot={{ r: 4, strokeWidth: 0, fill: '#f59e0b' }}
+                  label={(props) => {
+                    const { x, y, value, index } = props;
+                    const dataLength = enrichedData.length;
+                    if (index < dataLength - TREND_WINDOW) return null;
+                    return (
+                      <text x={x} y={y + 14} textAnchor="middle" fontSize="8.5" fontWeight="600" fill="#f59e0b">
+                        {value}
+                      </text>
+                    );
+                  }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+                      </div>
+        );
+      };
+
+      const validRange = startDate && endDate && startDate <= endDate;
+      const filteredData = useMemo(() => validRange
+        ? modeData.filter(row => row.date >= startDate && row.date <= endDate)
+        : [], [modeData, startDate, endDate, validRange]);
+      const reviewCount = filteredData.filter(row => row.needsReview).length;
+      const totalFlights = filteredData.length;
+      const numDays = validRange ? (endDate - startDate) / DAY_MS + 1 : 0;
+      const showAvg = numDays > 1;
+      const avgTotal = showAvg ? Math.round(totalFlights / numDays) : '';
+      const avgText = language === 'vi' ? 'chuyến/ngày' : 'flights/day';
+
+      const domesticInternational = aggregateDomesticInternational(filteredData, startDate, endDate);
+      const byCountry = aggregateData(filteredData.filter(r => r.isInternational), 'country', startDate, endDate);
+      const byAirline = aggregateData(filteredData, 'airline', startDate, endDate);
+      const byCity = aggregateData(filteredData, 'city', startDate, endDate);
+      const charterCountries = aggregateCharterCountries(filteredData, startDate, endDate);
+
+      const countrySourceMap = aggregateCountrySourceMap(filteredData, startDate, endDate, numDays);
+
+      const topDomesticData = aggregateData(filteredData.filter(r => r.isDomestic), 'city', startDate, endDate);
+      const topIntlCities = aggregateData(filteredData.filter(r => r.isInternational), 'city', startDate, endDate);
+
+      const formatDate = (date) => {
+        return `${date.getUTCDate()}/${(date.getUTCMonth() + 1).toString().padStart(2, '0')}/${date.getUTCFullYear()}`;
+      };
+
+      const startDateFormatted = startDate ? formatDate(startDate) : '';
+      const endDateFormatted = endDate ? formatDate(endDate) : '';
+
+      const formatDateForInput = date => date ? dateKey(date) : '';
+
+      return (
+        <div className="space-y-8">
+          <h1 className="dashboard-title">{t('title')}</h1>
+          <div className="topbar-wrap">
+            <div className="topbar-grid">
+              <div className="topbar-field compact">
+                <label className="topbar-label">{t('fromDate')}</label>
+                <input
+                  type="date"
+                  className="topbar-input"
+                  value={formatDateForInput(startDate)}
+                  onChange={(e) => setStartDate(parseDate(e.target.value))}
+                />
+              </div>
+
+              <div className="topbar-field compact">
+                <label className="topbar-label">{t('toDate')}</label>
+                <input
+                  type="date"
+                  className="topbar-input"
+                  value={formatDateForInput(endDate)}
+                  onChange={(e) => setEndDate(parseDate(e.target.value))}
+                />
+              </div>
+
+              <div className="topbar-field compact">
+                <label className="topbar-label" htmlFor="flight-data-mode">{language === 'vi' ? 'Dữ liệu' : 'Data'}</label>
+                <select id="flight-data-mode" className="topbar-input" value={dataMode} onChange={e => setDataMode(e.target.value)}>
+                  <option value="all">{language === 'vi' ? 'Tất cả dòng' : 'All records'}</option>
+                  <option value="landed">{language === 'vi' ? 'Đã hạ cánh' : 'Landed'}</option>
+                  <option value="planned">{language === 'vi' ? 'Lịch dự kiến' : 'Planned'}</option>
+                </select>
+              </div>
+
+              <div className="topbar-field topbar-url">
+                <label className="topbar-label">Google Sheet URL</label>
+                <input
+                  type="text"
+                  className="topbar-input"
+                  value={sheetUrl}
+                  onChange={handleUrlChange}
+                  placeholder={t('urlPlaceholder')}
+                />
+              </div>
+
+              <button
+                className="topbar-btn primary"
+                onClick={handleReload}
+              >
+                {t('reload')}
+              </button>
+
+              <button
+                className="topbar-btn secondary"
+                onClick={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
+              >
+                {language === 'vi' ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
+              </button>
+            </div>
+          </div>
+
+          <div className="mini-note">
+            {language === 'vi'
+              ? 'Nguồn CSV T10 · “Tất cả dòng” gồm cả dữ liệu cũ và lịch dự kiến · “Đã hạ cánh” đọc cột Trạng thái · “Lịch dự kiến” đọc cột Loại dữ liệu · Charter theo quy tắc phân loại.'
+              : 'T10 CSV source · Landed uses Status · Planned uses Data Type · Charter is rule-based.'}
+          </div>
+          {loadStats && (loadStats.invalidDates > 0 || loadStats.duplicates > 0 || loadStats.csvErrors > 0) && (
+            <div className="mini-note" role="status">
+              {language === 'vi'
+                ? `Toàn bộ CSV: ${loadStats.invalidDates} dòng lỗi ngày · ${loadStats.duplicates} dòng trùng đã bỏ qua · ${loadStats.csvErrors} lỗi định dạng CSV.`
+                : `Entire CSV: ${loadStats.invalidDates} invalid dates · ${loadStats.duplicates} duplicates skipped · ${loadStats.csvErrors} CSV format errors.`}
+            </div>
+          )}
+          {reviewCount > 0 && <div className="mini-note" role="status">{reviewCount} {language === 'vi' ? 'dòng cần kiểm tra danh mục hoặc phân loại.' : 'records need a dictionary or classification check.'}</div>}
+          {noDataMsg && <div className="no-data-msg" role="alert">{noDataMsg}</div>}
+          {loading ? <div className="text-center text-xl">{t('loading')}</div> : !validRange ? (
+            <div className="no-data-msg">{language === 'vi' ? 'Chọn khoảng ngày hợp lệ.' : 'Select a valid date range.'}</div>
+          ) : !totalFlights ? (
+            <div className="no-data-msg">{t('noDataOverview')}</div>
+          ) : <>
+          {renderExecutiveSummary()}
+
+          {numDays >= 7 && (
+            <div className="hero-chart-section">
+              {renderLineChart(aggregateFlightsByDate(filteredData, startDate, endDate), t('timeline', { start: startDateFormatted, end: endDateFormatted }))}
+            </div>
+          )}
+
+          {renderInsightLite()}
+
+          <div className="space-y-6">
+            {renderCountrySourceMap(countrySourceMap)}
+            {renderStatsBlock(byCity, t('pie4'), 'city')}
+            {renderStatsBlock(byAirline, t('pie3'), 'airline')}
+            {renderStatsBlock(charterCountries, t('pie5'), 'charter')}
+            {renderCharterFlightList(filteredData)}
+          </div>
+
+          </>}
+
+          <footer className="text-center text-xs text-gray-500 mt-8 pt-4">
+            <strong>Written by Mr Ái Trì @2025. Mobile: 0903 049955</strong>
+          </footer>
+        </div>
+      );
+    };
+
+    // Export App to global scope
+    window.App = App;
+  </script>
+</body>
+</html>
